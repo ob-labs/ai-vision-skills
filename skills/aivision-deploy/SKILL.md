@@ -39,11 +39,12 @@ combination, and upgrades use the channel or version the user requested.
 Resolve either choice to a **published versioned GitHub Release** before installing:
 Release uses the product repository's latest stable Release. During the restricted
 trial, Daily uses a fixed `delivery-v<product-version>` prerelease in
-`ob-labs/ai-vision-skills`, with current target
+`ob-labs/ai-vision-skills`, with current corrected target
 `delivery-v0.0.1-daily.20261028.2`. Verify that exact tag and its required assets;
-this guide does not establish publication. This revision selects Linux x64 and
-ARM64 CLI archives plus both Linux image architectures. The completed first
-x86-only delivery retains its original tag, assets, and image references.
+this guide does not establish that it has been published. The current delivery
+supports only the Linux x64 CLI and `linux/amd64` images. Complete all AMD64
+publication and full validation before processing ARM; adding ARM uses a new
+Daily revision and preserves the previous delivery's published x86 bytes.
 Daily versions use a fixed snapshot date: `0.0.1-daily.20261028` for the first
 version on that date and `.2`, `.3`, and later for
 additional accepted versions on that date. Retries or work crossing midnight
@@ -56,6 +57,12 @@ instead of silently substituting `dev` or claiming a build is from today.
 Follow [version resolution and downloads](reference/prerequisites.md#resolve-the-version-and-download-matching-assets)
 for matching CLI, checksums, image manifest and deployment variables.
 
+The corrected `.2` restricted CLI excludes source-mode Python resources before
+linking. The earlier `.20261028` CLI does not meet that boundary. Use matching
+native image vars; explicit source modes and source installers are rejected.
+CLI-managed `--target compose` remains available. Standalone `--compose-file`
+is unsupported by this private native build; ordinary source builds retain it.
+
 ## Decide the environment first
 
 Use the target the user already requested or the existing deployment uses.
@@ -65,7 +72,7 @@ entry points differ and Kubernetes needs a cluster that already exists:
 | Target | What it requires | Command shape | Depth |
 |---|---|---|---|
 | **Docker** (default, the usual answer) | a running Docker daemon | `aiv cast --var …` | [reference/docker.md](reference/docker.md) |
-| **Docker Compose** (optional, current source) | Matching aiv, Docker, Compose 2.27+, matching deployment assets/images; no host Python/controller | `aiv cast --target compose …` or explicit `--compose-file` / `--compose-env-file` | [product Compose](reference/docker.md#product-compose-source-version) |
+| **Docker Compose** (optional, current source) | Matching aiv, Docker, Compose 2.27+, matching deployment assets/images; no host Python/controller | `aiv cast --target compose …` | [product Compose](reference/docker.md#product-compose-source-version) |
 | **Kubernetes** | `kubectl` plus an existing cluster: Kubernetes 1.33–1.36, admin rights, a default StorageClass, ≥4 CPU / 16Gi and ~140Gi disk | `aiv cast --target kubernetes --context <ctx> --vars-file ./aivision.k8s.vars.yaml` | [reference/kubernetes.md](reference/kubernetes.md) |
 
 For Compose, retain --target compose on every CLI operation. The Go CLI calls
@@ -159,9 +166,8 @@ Record a new deployment's choice as `OB_BACKEND: "oceanbase"` or
 selection across subsequent casts, together with the fixed history start.
 
 Other platform services need additional resources. The default seekdb image is
-Linux/amd64. The restricted `.2` delivery supplies an explicit dual-architecture
-`OB_IMAGE` in its matching vars. Other releases require suitable Docker emulation
-or a separately validated image on ARM.
+Linux/amd64; ARM requires suitable Docker emulation or a separately validated
+`OB_IMAGE`.
 Use the matching CLI from the selected Release and confirm `OB_BACKEND` support
 when choosing seekdb; see [prerequisites](reference/prerequisites.md).
 

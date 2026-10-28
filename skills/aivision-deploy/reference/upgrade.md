@@ -4,6 +4,14 @@ Use the existing CLI lifecycle; do not introduce another upgrade controller.
 This reference covers default Docker and optional Compose. Kubernetes keeps its
 [target-specific workflow](kubernetes.md).
 
+The restricted `0.0.1-daily.20261028.2` native CLI supports default Docker and
+CLI-managed Compose. It rejects existing-file / standalone `--compose-file`
+deployments. If the existing installation uses that mode, stop before replacing
+the CLI, changing configuration or mutating services. Keep its compatible CLI
+and resolve a supported upgrade path; this delivery provides no automatic
+conversion. The standalone instructions below apply only to ordinary source
+CLI builds with that capability.
+
 ## Continue within the requested scope
 
 An explicit upgrade request selects the existing installation, not a fresh
@@ -22,7 +30,8 @@ An inspection-only request does not authorize upgrade or container removal.
    selector. Establish the installed version/manifest separately from About/build
    responses and the actual container image identities; saved overrides alone
    are not runtime proof. Default Docker uses `--namespace`, `--workdir` and any
-   `--file`; CLI-managed Compose also uses `--target compose`. Existing-file
+   `--file`; CLI-managed Compose also uses `--target compose`. For ordinary
+   source CLI builds only, existing-file
    Compose uses its exact `--compose-file` and `--compose-env-file`, without
    mixing namespace/workdir/vars flags. Never convert an existing Docker target
    to Compose as part of an ordinary version upgrade.
@@ -44,8 +53,7 @@ An inspection-only request does not authorize upgrade or container removal.
    vars. Restricted Daily uses the exact published
    `delivery-v<product-version>` prerelease in `ob-labs/ai-vision-skills`; do not
    follow the old product `daily` pointer. The current target is
-   `delivery-v0.0.1-daily.20261028.2`, with Linux x64/ARM64 CLI archives and
-   both Linux image architectures; confirm the
+   `delivery-v0.0.1-daily.20261028.2`, Linux x64 / `linux/amd64` only; confirm the
    Release and platform exist before changing an installed CLI. A retry keeps
    that resolved version. CLI installation alone does
    not upgrade running services. Preserve the old restore set before installing
@@ -65,7 +73,8 @@ An inspection-only request does not authorize upgrade or container removal.
    Retain passwords, tokens, datastore/backend, managed/external choice, ports,
    addresses, namespace/state and fixed history start. Do not replace the file
    with the downloaded vars or pass two `--vars-file` flags. External databases
-   retain their existing connection/image policy. Existing parameterized Compose
+   retain their existing connection/image policy. With ordinary source CLI
+   builds only, existing parameterized Compose
    files keep their original env and matching maintained assets; do not rewrite
    generated CLI bundles or infer a different lifecycle from registry tags.
 5. Run the matching CLI's ordinary `cast` with the original selectors and one
@@ -78,8 +87,9 @@ An inspection-only request does not authorize upgrade or container removal.
    ```
 
    Substitute the discovered selectors, including any original `--file`.
-   CLI-managed Compose keeps `--target compose` on both commands. Existing-file
-   Compose follows the [exact file/env command](docker.md#product-compose-source-version).
+   CLI-managed Compose keeps `--target compose` on both commands. With ordinary
+   source CLI builds only, existing-file Compose follows the
+   [exact file/env command](docker.md#product-compose-source-version).
    Cached local images use the previously selected pull policy. Do not start
    overlapping lifecycle commands or blindly retry a failed stop.
 

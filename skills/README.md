@@ -61,9 +61,8 @@ The command clones this Skills repository using the caller's own authorized
 GitHub/Git session; do not distribute shared tokens. An authorized operator may
 also make the complete manual copy below. Restricted Daily CLI and deployment
 metadata use an exact published `delivery-v<product-version>` prerelease in this
-repository. The current target, `delivery-v0.0.1-daily.20261028.2`, selects
-Linux x64/ARM64 CLI archives and both Linux image architectures. Verify the
-exact publication and assets before use; macOS is not included in this delivery.
+repository. The current target, `delivery-v0.0.1-daily.20261028.2`, allows only the
+Linux x64 CLI and `linux/amd64` images; verify publication and assets before use.
 Missing assets or another host platform require a compatible published delivery,
 not a product checkout. Stable product Releases retain their original channel.
 Installing a Skill, downloading a CLI Release, pulling platform images, and

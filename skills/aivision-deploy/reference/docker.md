@@ -104,10 +104,8 @@ startup; existing volumes retain their
 password. Changing the variable does not rotate a database password.
 
 The default pinned seekdb image is Linux/amd64. ARM hosts need Docker emulation
-or an independently validated image supplied through `OB_IMAGE`. The restricted
-`.2` delivery supplies that override as an exact dual-architecture digest in its
-matching vars; keep the manifest pin. Generic defaults do not establish native
-ARM verification. Resource defaults are 2 CPU, 2G memory, a 2G datafile,
+or an independently validated image supplied through `OB_IMAGE`; do not claim
+native ARM verification. Resource defaults are 2 CPU, 2G memory, a 2G datafile,
 and 2G log disk, configurable through `SEEKDB_CPU_COUNT`, `SEEKDB_MEMORY_LIMIT`,
 `SEEKDB_DATAFILE_SIZE`, and `SEEKDB_LOG_DISK_SIZE`. These cover the database only.
 
@@ -338,7 +336,16 @@ docker compose --project-name "$AIV_COMPOSE_PROJECT" --file "$AIV_COMPOSE_BUNDLE
   --env-file /dev/null logs --tail 100 frontend
 ```
 
-Config --quiet avoids printing resolved secrets. Standalone parameterized files
+Config --quiet avoids printing resolved secrets.
+
+The following standalone-file commands require an ordinary source CLI build.
+The restricted `0.0.1-daily.20261028.2` native CLI rejects `--compose-file` before
+Docker or deployment-state mutation. If that is the existing deployment mode,
+stop before replacing its CLI or changing configuration or services; this
+delivery provides no automatic conversion. CLI-managed `--target compose`
+above remains supported with the matching native release variables.
+
+Standalone parameterized files
 use their original actual env, not /dev/null. Mutations use the same Go guard:
 
 ```bash
@@ -390,12 +397,16 @@ from the earlier source-candidate matrix; static checks and same-image recast
 are not cross-release upgrades. Follow the shared authenticated verification
 for new and retained traces, organization identity, canaries, mounts and image IDs.
 
+The restricted `.2` native CLI supports CLI-managed `--target compose` with
+matching native variables. It rejects standalone `--compose-file` before Docker
+or deployment-state mutation. Generic standalone Compose instructions apply to
+ordinary source builds, not this private native delivery.
+
 ## Agent machine onboarding
 
 Check the [native Agent client runtime](prerequisites.md#native-agent-client-runtime)
-on the Agent machine first. Use the matching Linux x64 or ARM64 native bundle
-on Debian Bookworm (glibc 2.36), with that architecture's actual release evidence.
-The Docker host
+on the Agent machine first. This Daily's installer requires Linux x64 with glibc
+2.35 or newer; Debian Bookworm is the qualified client runtime. The Docker host
 and Agent client can be different machines with different runtime libraries.
 
 Use the machine and user account that run the target coding Agent:
