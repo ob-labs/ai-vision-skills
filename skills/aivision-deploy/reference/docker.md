@@ -302,8 +302,9 @@ install and connect the collection plugin on the machine running that Agent.
 Compose is optional. Default Docker remains supported through the Go runtime;
 current source adds explicit --target compose, also controlled in Go. Use a
 confirmed matching CLI and Compose2.27+ with Docker and matching images. There
-is no host Python or extra controller file. Container bootstrap Python remains
-inside the selected application images. A dev tag or OB_BACKEND does not prove
+is no host Python or extra controller file. Native delivery images provide
+their bootstrap executables with `NATIVE_PYTHON_RUNTIME: "true"`; older
+Python-based images retain their matching mode. A dev tag or OB_BACKEND does not prove
 the installed CLI supports the target.
 
 For a new CLI Compose installation, prepare original private vars/history/images
@@ -399,9 +400,11 @@ Use the machine and user account that run the target coding Agent:
    `--collection-mode`. If a required command or flag is missing, follow the
    [CLI installation or upgrade steps](prerequisites.md#install-or-upgrade-the-cli-when-needed)
    and repeat the help check before generating an authorization.
-   Have a usable Python 3.11+ on `PATH` or already installed by `uv`;
-   the CLI searches both, so an older default `python3` alone does not require
-   reinstalling Python. The host Agent must also be installed and configured.
+   Use the selected Daily's native Agent installer; it does not require
+   user-installed Python. Confirm the deployed platform actually serves that
+   native installer before continuing. An older Python-based hook is a separate
+   compatibility path, not a reason to add a Python prerequisite to this native
+   flow. The host Agent must be installed and configured.
 2. Open the deployed Web URL, register/sign in, and choose the target Agent's
    onboarding guide. Generate the installation command **after** the client
    prerequisites are ready. Run that complete command unchanged in the Agent

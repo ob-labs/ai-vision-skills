@@ -110,12 +110,24 @@ manifest is required for that local validation.
 
 For published builds, choose Release or Daily using the [shared channel flow](../SKILL.md#choose-release-or-daily)
 and download the [matching CLI and verified manifest](prerequisites.md#resolve-the-version-and-download-matching-assets).
+Restricted Daily uses an exact published `delivery-v<product-version>`
+prerelease in `ob-labs/ai-vision-skills`; the first target
+`delivery-v0.0.1-daily.20261028` supplies a Linux x64 CLI and `linux/amd64`
+service images only. Confirm the CLI host and cluster node architectures are
+supported; a Docker smoke or generic ARM recipe does not establish ARM or
+Kubernetes acceptance. Missing published assets or platform support stop this
+flow. Use a new Daily revision for later ARM delivery, preserving the earlier
+delivery's published x86 bytes.
 Copy `SIGNOZ_IMAGE`, `GATEWAY_IMAGE`, `BE_IMAGE`, `AGENTLENS_IMAGE`, `FE_IMAGE`
 and `AIVISION_RELEASE_MANIFEST_BASE64` from its verified CE vars asset into one private
 `aivision.k8s.vars.yaml`, retaining existing Kubernetes settings. These digest
 references pin all five bundled services, including SigNoz. The release metadata
 key supplies the installed product version to About without rewriting original
 component build information.
+For restricted Daily, service digest references come from the manifest under
+`ghcr.io/ob-labs/ai-vision-skills/`; do not infer tags from the Release name.
+Keep `NATIVE_PYTHON_RUNTIME: "true"` from native vars when supported by the
+selected CLI's Kubernetes configuration, and verify support before deployment.
 Do not copy Docker-only `OB_BACKEND` or its `OB_IMAGE`: Kubernetes uses its own
 Operator-compatible OceanBase image. Do not copy the Docker history-start or
 password keys, which this target does not accept. Keep the file outside source

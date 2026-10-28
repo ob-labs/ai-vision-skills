@@ -36,16 +36,23 @@ If the user delegates the choice, use Release. For an existing deployment,
 inspect its saved configuration and actual version first; retries keep that
 combination, and upgrades use the channel or version the user requested.
 
-Resolve either choice to a **versioned GitHub Release** before installing:
-Release uses the latest stable Release; Daily uses the versioned-asset link in
-the `daily` Release notes. Daily versions use a fixed snapshot date:
-`0.0.1-daily.20261021` for the first version and `.2`, `.3`, and later for
+Resolve either choice to a **published versioned GitHub Release** before installing:
+Release uses the product repository's latest stable Release. During the restricted
+trial, Daily uses a fixed `delivery-v<product-version>` prerelease in
+`ob-labs/ai-vision-skills`, starting with target
+`delivery-v0.0.1-daily.20261028`. Verify that exact tag and its required assets;
+this guide does not establish that it has been published. The first delivery
+supports only the Linux x64 CLI and `linux/amd64` images. Complete all AMD64
+publication and full validation before processing ARM; adding ARM uses a new
+Daily revision and preserves the previous delivery's published x86 bytes.
+Daily versions use a fixed snapshot date: `0.0.1-daily.20261028` for the first
+version on that date and `.2`, `.3`, and later for
 additional accepted versions on that date. Retries or work crossing midnight
 keep the snapshot date and candidate version; workflow run numbers and attempts
-remain diagnostic build metadata. `daily` is a moving pointer, not a product
-version. A trial alias with Daily metadata is still a candidate until the
-required default-branch and publication gates pass. If the requested channel
-has no published build, report that fact
+remain diagnostic build metadata. Do not follow the old product `daily` pointer
+or use `releases/latest` for this prerelease. `aiv --version` remains the product
+version without `delivery-v`. If the requested channel or platform has no
+published compatible build, report that fact and stop
 instead of silently substituting `dev` or claiming a build is from today.
 Follow [version resolution and downloads](reference/prerequisites.md#resolve-the-version-and-download-matching-assets)
 for matching CLI, checksums, image manifest and deployment variables.
@@ -195,9 +202,12 @@ and ports. Use the CE or seekdb asset for that selected backend; see
 [matching assets](reference/prerequisites.md#resolve-the-version-and-download-matching-assets).
 The file updates all five services together, including SigNoz, and includes
 `AIVISION_RELEASE_MANIFEST_BASE64` for the installed product identity. Users select
-one product release; do not ask them to choose or update component tags. Each
-service also exposes the same product-version tag, while the verified vars pin
-the exact tested digests. For explicitly requested local images, keep their
+one product release; do not ask them to choose or update component tags. Restricted
+Daily service images use `ghcr.io/ob-labs/ai-vision-skills/`; take all five exact
+digest references from the manifest and verified vars. Preserve
+`NATIVE_PYTHON_RUNTIME: "true"`; native deployment and Agent installation need
+no user-installed Python. Never derive image tags from the delivery tag. For
+explicitly requested local images, keep their
 recorded references and use `IMAGE_PULL=missing` instead of `always` below when
 those images exist only on this host.
 

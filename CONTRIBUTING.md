@@ -8,7 +8,7 @@ Keep `skills/<name>/SKILL.md` names stable and provide concise `name` and `descr
 
 Preserve supported deployment lifecycle, identity, authentication, telemetry, and compatibility constraints. A Skill edit must not invent missing CLI capabilities, Release assets, runtime evidence, or extra user authorizations. Keep credentials in private local configuration and out of commits, screenshots, fixtures, and command output.
 
-When adding a Skill, update both catalog indexes. Preserve relevant tests and bundled dependencies. Product versioning is independent of catalog tags; reserve `skills-v<catalog-version>` for catalog-only versions. Product trial tags, when introduced, use `delivery-v<product-version>` and explicit matching assets.
+When adding a Skill, update both catalog indexes. Preserve relevant tests and bundled dependencies. Product versioning is independent of catalog tags; reserve `skills-v<catalog-version>` for catalog-only versions. Restricted Daily delivery tags use immutable `delivery-v<product-version>` prereleases and explicit matching assets. The initial AMD64 delivery has the six-asset allowlist in [distribution ownership](docs/distribution.md); later architecture work uses a new Daily revision.
 
 ## Checks
 

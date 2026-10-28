@@ -41,8 +41,12 @@ An inspection-only request does not authorize upgrade or container removal.
    before mutation. Keep backup credentials and private state out of chat/logs.
 3. [Resolve and verify](prerequisites.md#resolve-the-version-and-download-matching-assets)
    one versioned Release and its matching CLI, manifest and backend-specific
-   vars. Daily follows the versioned link in the `daily` Release; a retry keeps
-   that resolved version even if the pointer moves. CLI installation alone does
+   vars. Restricted Daily uses the exact published
+   `delivery-v<product-version>` prerelease in `ob-labs/ai-vision-skills`; do not
+   follow the old product `daily` pointer. The first target is
+   `delivery-v0.0.1-daily.20261028`, Linux x64 / `linux/amd64` only; confirm the
+   Release and platform exist before changing an installed CLI. A retry keeps
+   that resolved version. CLI installation alone does
    not upgrade running services. Preserve the old restore set before installing
    the target CLI or changing deployment configuration.
 4. Merge the five released application digests and exact embedded release
@@ -53,7 +57,10 @@ An inspection-only request does not authorize upgrade or container removal.
    pins forward merely because they were in the original command. Preserve
    unrelated overrides and selectors. Privately resolve the effective five image
    settings and embedded manifest before `cast`; all must match the selected
-   release. Never print resolved secrets to do this.
+   release. For restricted Daily, use the manifest's exact digest references
+   under `ghcr.io/ob-labs/ai-vision-skills/` and retain
+   `NATIVE_PYTHON_RUNTIME: "true"` from its native vars. Never guess tags or
+   print resolved secrets to do this.
    Retain passwords, tokens, datastore/backend, managed/external choice, ports,
    addresses, namespace/state and fixed history start. Do not replace the file
    with the downloaded vars or pass two `--vars-file` flags. External databases

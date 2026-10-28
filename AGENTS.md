@@ -11,4 +11,4 @@ This repository is the canonical source for maintained AI Vision Skills. Read th
 - Write engineering documentation and PR text in English. Preserve explicitly localized files.
 - Run catalog checks, relevant script tests, and upstream Skills discovery/installation checks. Static installation evidence does not establish live platform or model behavior.
 - Inspect the final diff and `git status`; run `git diff --check`. Do not include temporary downloads, logs, credentials, build outputs, or copied product history.
-- Remote commits, pushes, repository permissions, publication, and visibility changes require user authorization. This session is authorized to initialize and populate this repository; other repositories are not included in that publication scope.
+- Remote commits, pushes, repository permissions, publication, and visibility changes require user authorization. Apply the user's current explicit publication scope; repository setup alone does not authorize unrelated publication or access grants.

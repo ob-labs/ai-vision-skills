@@ -17,25 +17,36 @@ installation or an upgrade is needed.
 
 ## From a release
 
-Use the deployment's release repository and compatible published versioned tag;
-replace `YOUR_RESOLVED_VERSIONED_TAG` below with that actual tag. Resolve Daily
-through the versioned-assets link in the `daily` Release; the moving pointer
-has no CLI archive. During the restricted trial use an authorized GitHub account
-with read access to the delivery repository and an authenticated `gh`. Skill
-repository access does not grant Release access. Do not use shared tokens.
-The current delivery repository remains `ob-labs/ai-vision-ob`; this Skill
-repository does not currently publish CLI binaries. An owner may supply a different
-fixed delivery repository/tag; verify its archive/checksums and compatibility
-before replacing the assignments below. If no compatible Release is available,
-report the missing Release and stop; a product source checkout is not a fallback. Keep
-all downloads and extraction out of the caller's working directory:
+Use the deployment's compatible published versioned Release. Restricted Daily
+downloads use `ob-labs/ai-vision-skills` and a fixed
+`delivery-v<product-version>` prerelease. The first target below is
+`delivery-v0.0.1-daily.20261028`, with only `aiv-linux-x64.tar.gz` and
+`linux/amd64` images. These assignments do not prove publication; inspect the
+exact tag and required assets before use. Finish all AMD64 publication and
+validation before processing ARM; later ARM support uses a new Daily revision
+and preserves the earlier delivery's published x86 bytes.
+
+Use the operator's authenticated `gh` account with authorized read access; do
+not share tokens. Do not resolve this Daily through the old product `daily`
+pointer or `releases/latest`. Stable product Releases retain their original
+channel: for one of those, replace the repository with `ob-labs/ai-vision-ob`
+and the tag with its actual published `v<product-version>`. Confirm compatibility
+with the existing platform before replacing an installed CLI. A missing Release,
+archive, or supported host platform stops installation; a product source
+checkout is not a fallback. Keep downloads and extraction out of the caller's
+working directory:
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
 (
   set -eu
-  AIV_REPOSITORY=ob-labs/ai-vision-ob
-  AIV_TAG=YOUR_RESOLVED_VERSIONED_TAG
+  AIV_REPOSITORY=ob-labs/ai-vision-skills
+  AIV_TAG=delivery-v0.0.1-daily.20261028
+  case "$AIV_TAG" in
+    delivery-v*) AIV_PRODUCT_VERSION=${AIV_TAG#delivery-v}; AIV_PRERELEASE=true ;;
+    v*) AIV_PRODUCT_VERSION=${AIV_TAG#v}; AIV_PRERELEASE=false ;;
+    *) echo 'Select an exact published delivery-v or stable v tag.' >&2; exit 1 ;;
+  esac
   case "$(uname -s)" in
     Linux) AIV_PLATFORM=linux ;;
     Darwin) AIV_PLATFORM=darwin ;;
@@ -46,6 +57,10 @@ export PATH="$HOME/.local/bin:$PATH"
     arm64|aarch64) AIV_ARCH=arm64 ;;
     *) echo 'Supported architectures: x64 and arm64' >&2; exit 1 ;;
   esac
+  if [ "$AIV_TAG" = delivery-v0.0.1-daily.20261028 ] &&
+      [ "$AIV_PLATFORM-$AIV_ARCH" != linux-x64 ]; then
+    echo 'This first Daily delivery supports Linux x64 only.' >&2; exit 1
+  fi
   AIV_PACKAGE="aiv-$AIV_PLATFORM-$AIV_ARCH.tar.gz"
   AIV_TEMP=$(mktemp -d)
   AIV_STAGED=''
@@ -53,6 +68,19 @@ export PATH="$HOME/.local/bin:$PATH"
   command -v gh >/dev/null 2>&1 || { echo 'GitHub CLI is required for restricted Release downloads.' >&2; exit 1; }
   gh auth status --hostname github.com >/dev/null 2>&1 ||
     { echo 'Authenticate gh with an authorized account before downloading.' >&2; exit 1; }
+  AIV_RESOLVED_TAG=$(gh release view "$AIV_TAG" -R "$AIV_REPOSITORY" \
+    --json tagName,isDraft,isPrerelease \
+    --jq "select(.isDraft == false and .isPrerelease == $AIV_PRERELEASE) | .tagName")
+  [ "$AIV_RESOLVED_TAG" = "$AIV_TAG" ] ||
+    { echo 'The exact published Release is unavailable or has the wrong channel.' >&2; exit 1; }
+  if [ "$AIV_TAG" = delivery-v0.0.1-daily.20261028 ]; then
+    AIV_ASSETS=$(gh release view "$AIV_TAG" -R "$AIV_REPOSITORY" \
+      --json assets --jq '.assets[].name' | LC_ALL=C sort)
+    AIV_EXPECTED_ASSETS=$(printf '%s\n' aiv-linux-x64.tar.gz install-aiv.sh \
+      release-manifest.json release-images.vars.yaml release-seekdb.vars.yaml SHA256SUMS | LC_ALL=C sort)
+    [ "$AIV_ASSETS" = "$AIV_EXPECTED_ASSETS" ] ||
+      { echo 'The first Daily requires exactly its six approved assets.' >&2; exit 1; }
+  fi
   gh release download "$AIV_TAG" -R "$AIV_REPOSITORY" \
     -p "$AIV_PACKAGE" -p SHA256SUMS --dir "$AIV_TEMP"
   if command -v sha256sum >/dev/null 2>&1; then
@@ -66,7 +94,9 @@ export PATH="$HOME/.local/bin:$PATH"
   tar -xzf "$AIV_TEMP/$AIV_PACKAGE" -C "$AIV_TEMP" aiv
   [ -f "$AIV_TEMP/aiv" ] && [ ! -L "$AIV_TEMP/aiv" ]
   chmod 755 "$AIV_TEMP/aiv"
-  "$AIV_TEMP/aiv" --version
+  AIV_ACTUAL_VERSION=$("$AIV_TEMP/aiv" --version)
+  [ "$AIV_ACTUAL_VERSION" = "aiv $AIV_PRODUCT_VERSION" ] ||
+    { echo 'CLI product version differs from the selected Release.' >&2; exit 1; }
   mkdir -p "$HOME/.local/bin"
   AIV_STAGED=$(mktemp "$HOME/.local/bin/.aiv-install.XXXXXX")
   cp "$AIV_TEMP/aiv" "$AIV_STAGED"
@@ -80,6 +110,12 @@ export PATH="$HOME/.local/bin:$PATH"
 
 A failed download, checksum or executable check stops installation and preserves
 the existing binary. Do not continue with stale output from an earlier attempt.
+The `delivery-v` tag prefix is distribution metadata; `aiv --version` prints the
+product version (`0.0.1-daily.20261028` for the first target). The checksummed
+`install-aiv.sh` asset is an alternative only when it uses authenticated `gh`
+for private downloads and the same fixed repository/tag. This CLI installation
+does not require user-installed Python. The separate Quickstart Python SDK demo
+has its own runtime requirements.
 Before reporting installation complete, finish [durable PATH setup](path-setup.md)
 and verify the permanent binary in fresh interactive and login shells with a
 clean inherited PATH. A task-local export alone is insufficient. Querying an
