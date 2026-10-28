@@ -82,6 +82,22 @@ Source CLI builds additionally require Python 3 for the asset freshness check.
 After editing authoritative assets, run `make assets` in `aivision-cli/`, then
 `make build`; normal builds check the committed generated files without changing them.
 
+## Native Agent client runtime
+
+For this restricted Daily, run native Agent onboarding on Linux x64 with glibc
+2.35 or newer. The qualified client runtime is Debian Bookworm. Check the
+**Agent's own machine** before `aiv connect`:
+
+```bash
+getconf GNU_LIBC_VERSION
+```
+
+If glibc is older than 2.35, use a compatible Agent machine. A missing glibc
+symbol is an incompatible client runtime; installing host Python does not fix
+the native bundle. The static Go CLI and Docker services have separate runtime
+requirements: application runtime libraries are inside their images. Successful
+deployment on an older Docker host does not qualify Agent installation there.
+
 ## Find the CLI before installing
 
 An installed CLI may be missing from the current shell's `PATH`. Check the

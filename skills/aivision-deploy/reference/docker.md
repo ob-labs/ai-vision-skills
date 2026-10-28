@@ -390,6 +390,11 @@ for new and retained traces, organization identity, canaries, mounts and image I
 
 ## Agent machine onboarding
 
+Check the [native Agent client runtime](prerequisites.md#native-agent-client-runtime)
+on the Agent machine first. This Daily's installer requires Linux x64 with glibc
+2.35 or newer; Debian Bookworm is the qualified client runtime. The Docker host
+and Agent client can be different machines with different runtime libraries.
+
 Use the machine and user account that run the target coding Agent:
 
 1. Complete the [CLI check or installation](prerequisites.md#find-the-cli-before-installing)
