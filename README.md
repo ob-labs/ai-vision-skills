@@ -1,6 +1,6 @@
 # AI Vision Skills
 
-The maintained AI Vision Skill catalog for deploying the platform, trying an Agent, inspecting traces, and querying usage. This repository is the canonical source for these Skills; product source, CLI builds, deployment assets, and telemetry plugins remain in the product repository.
+The maintained AI Vision Skill catalog for deploying the platform, trying an Agent, inspecting traces, and querying usage. This repository is the canonical source for these Skills and the restricted-trial Daily delivery channel. Product source, CLI builds, canonical deployment assets, and telemetry plugin implementation remain in the product repository.
 
 ## Install
 
@@ -34,9 +34,11 @@ If you previously installed from `ob-labs/ai-vision-ob`, install again from `ob-
 
 ## Distribution phases
 
-During the pre-open-source period, this private repository hosts the Skills. A later delivery step may publish compatible `aiv` binary archives and deployment metadata as versioned Release assets. No product binaries or delivery Releases are established merely by migrating the Skills. Use an existing compatible CLI or an available authorized product Release until that step is completed; report a missing compatible release rather than requesting a private source checkout.
+During the pre-open-source period, restricted Daily downloads resolve to an exact published `delivery-v<product-version>` prerelease in this private repository. The first delivery target is `delivery-v0.0.1-daily.20261028`, containing only the Linux x64 CLI and metadata for `linux/amd64` images. Check that the exact Release is published and its required assets exist before installing; this catalog does not establish publication. An absent Release or unsupported platform stops the download flow.
 
-Images stay in the existing container registry, with their actual product digests and separate read permissions. Security scanning follows the team's existing offline/manual process.
+The first delivery allows exactly six Release assets: `aiv-linux-x64.tar.gz`, `install-aiv.sh`, `release-manifest.json`, `release-images.vars.yaml`, `release-seekdb.vars.yaml`, and `SHA256SUMS`. Private downloads use the operator's authenticated `gh` account. `aiv --version` remains the product version, without `delivery-v`. Complete AMD64 publication and validation before processing ARM; later architecture support requires a new Daily revision and preserves published x86 assets.
+
+Application images use `ghcr.io/ob-labs/ai-vision-skills/{aivision-be,aivision-fe,agentlens,antcollector-gw,signoz-ob}`. Use the manifest's exact digest references and separately verified image access. Optional database mirrors use `oceanbase-ce` and `seekdb` under that namespace only when named in the manifest. Product source and build provenance remain unchanged. Security scanning follows the team's existing offline/manual process.
 
 After the product becomes open source, product binaries return to the product Release channel and this repository continues to maintain Skills only. Installation commands and Skill names stay the same. Review restricted historical Release assets and temporary credentials before changing repository visibility. See [distribution ownership](docs/distribution.md).
 

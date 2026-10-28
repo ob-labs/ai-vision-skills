@@ -59,10 +59,12 @@ all agents without prompting. See the upstream
 During the restricted trial, only authorized repository users can install.
 The command clones this Skills repository using the caller's own authorized
 GitHub/Git session; do not distribute shared tokens. An authorized operator may
-also make the complete manual copy below. This repository currently publishes
-instructions and resources, not CLI binaries. CLI Release/Daily delivery remains
-in the product repository unless the deployment owner supplies another fixed
-delivery repository/tag.
+also make the complete manual copy below. Restricted Daily CLI and deployment
+metadata use an exact published `delivery-v<product-version>` prerelease in this
+repository. The first target, `delivery-v0.0.1-daily.20261028`, allows only the
+Linux x64 CLI and `linux/amd64` images; verify publication and assets before use.
+Missing assets or another host platform require a compatible published delivery,
+not a product checkout. Stable product Releases retain their original channel.
 Installing a Skill, downloading a CLI Release, pulling platform images, and
 signing in to AI Vision are separate operations; authenticate only the one that
 actually requires access.

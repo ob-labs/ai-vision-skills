@@ -126,14 +126,20 @@ then unset it. Never add it to ordinary serving-worker configuration or print it
 
 For Docker/Compose, resolve the actual backend container name from the original
 selector-rich `aiv status` command; default Docker commonly uses `aivision-be`,
-while Compose may choose another name. Set `AIV_BACKEND_CONTAINER` accordingly:
+while Compose may choose another name. Set `AIV_BACKEND_CONTAINER` accordingly.
+The native Daily backend provides `/app/manage`; use that launcher for the
+selected native image:
 
 ```sh
 test -n "${SIGNOZ_INGEST_INTERNAL_KEY:-}" &&
 docker exec --workdir /app --env SIGNOZ_INGEST_INTERNAL_KEY "$AIV_BACKEND_CONTAINER" \
-  /app/.venv/bin/python manage.py maintain_trace_read_model --resume-maintenance --once
+  /app/manage maintain_trace_read_model --resume-maintenance --once
 unset SIGNOZ_INGEST_INTERNAL_KEY
 ```
+
+For a separately selected older Python-based image, use its confirmed Python
+management launcher instead. Do not add a host Python prerequisite or assume
+that the native image includes `/app/.venv/bin/python`.
 
 Resume clears rebuildable derived records and increments shared generation;
 raw Spans remain. The worker reenrolls and catches up afterward. Verify the same
@@ -155,7 +161,7 @@ test -n "${SIGNOZ_INGEST_INTERNAL_KEY:-}" &&
 printf '%s\n' "$SIGNOZ_INGEST_INTERNAL_KEY" |
   kubectl --context YOUR_CONTEXT --namespace YOUR_NAMESPACE \
     exec -i deployment/aivision-be -c be -- /bin/sh -c \
-    'IFS= read -r SIGNOZ_INGEST_INTERNAL_KEY || exit 1; export SIGNOZ_INGEST_INTERNAL_KEY; cd /app && exec /app/.venv/bin/python manage.py maintain_trace_read_model --resume-maintenance --once'
+    'IFS= read -r SIGNOZ_INGEST_INTERNAL_KEY || exit 1; export SIGNOZ_INGEST_INTERNAL_KEY; cd /app && exec /app/manage maintain_trace_read_model --resume-maintenance --once'
 unset SIGNOZ_INGEST_INTERNAL_KEY
 ```
 

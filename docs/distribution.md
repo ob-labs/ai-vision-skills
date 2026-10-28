@@ -2,9 +2,11 @@
 
 ## Current state
 
-The repository starts as a private, canonical Skill catalog. The initial migration contains four complete Skills and catalog validation. It does not publish `aiv` binaries, create trial Releases, move application images, grant additional users or teams access, or perform runtime acceptance.
+This private repository owns the four maintained Skills and the restricted-trial Daily delivery channel. A delivery is available only after its exact `delivery-v<product-version>` GitHub prerelease is published with the required assets. Instructions, source changes, or a successful registry probe do not establish product publication or runtime acceptance.
 
-Existing organization and repository permissions apply. The user requested no additional access grants for this setup. Access by a new recipient without product-source permissions remains part of later delivery acceptance, not evidence established by a maintainer's successful clone.
+The first delivery target is product version `0.0.1-daily.20261028`, GitHub tag `delivery-v0.0.1-daily.20261028`. It supports the Linux x64 CLI and `linux/amd64` images only. Finish publication and full validation for all AMD64 artifacts before processing ARM. Adding ARM support requires a new Daily revision, such as `.2`, without changing the published x86 archives, images, or checksums of the earlier delivery.
+
+Existing organization and repository permissions apply; this delivery adds no user or team access grants. Access by a recipient without product-source permissions must be checked independently. A maintainer's successful clone or package push does not prove recipient access.
 
 ## Permanent ownership
 
@@ -12,23 +14,32 @@ Existing organization and repository permissions apply. The user requested no ad
 |---|---|
 | This repository's `skills/` | All maintained AI Vision Skills, bundled references/scripts, and catalog checks |
 | Product repository | Platform/CLI/plugin source, canonical `deploy/` assets, image builds, and product qualification |
-| Existing container registry | Five application service images and selected database dependencies with their actual digests |
+| `ghcr.io/ob-labs/ai-vision-skills/` | Restricted-trial application images and optional database mirrors, pinned by actual manifest digests |
 
 An installed Skill must contain its execution prerequisites. Product source links are maintainer provenance, not a requirement to clone or read private source before using a Skill. Plugin binaries and onboarding scripts continue to be served by the deployed platform; this catalog is not a second plugin distribution endpoint.
 
 ## Transitional binary delivery
 
-When the separately planned binary delivery work is executed:
+For each restricted Daily delivery:
 
-1. Freeze one product version and its qualified CLI archives, image digests, and deployment variables in the product build workflow.
-2. Publish an explicit allowlist of product artifacts to a private Release here, without rebuilding them or changing their product identity.
-3. Use an immutable `delivery-v<product-version>` prerelease tag. Obtain the four CLI archives, `release-manifest.json`, selected CE/seekdb vars, and `SHA256SUMS` from the same tag. A catalog tag never defines `aiv --version`.
-4. Render the delivery repository into `install-aiv.sh` before generating its checksum. Use an authenticated Release download route for private assets; the current curl-based installer does not gain private authentication simply by changing its repository argument.
-5. Keep source SHA, component build identities, workflow provenance, and OCI references truthful. Downloads from this repository do not imply the product was built here.
-6. Provide the exact version, archive checksums, image digests, and platforms to the existing offline/manual security scanning process. Internal reports are not Release assets unless explicitly requested.
-7. Verify recipient installation and actual telemetry ingestion/readback before claiming the combination is ready.
+1. Freeze one product version, qualified CLI archive, image digests, and deployment variables from the product build workflow. Product/CLI source and canonical deployment assets stay in the product repository; do not copy application source here.
+2. Use an immutable `delivery-v<product-version>` prerelease tag. The first release allows exactly the six assets below. No source bundle, `release-plan.json`, `plugin-dist.tar.gz`, build plan, log, or internal report belongs in that asset set.
+3. Render `ob-labs/ai-vision-skills` into `install-aiv.sh` before generating its checksum. Private asset downloads, including installer downloads, use the operator's authenticated GitHub CLI. An anonymous curl URL does not acquire private access by changing its repository.
+4. Retain actual product version, source SHA, component build identities, source URLs, and build/workflow provenance. `aiv --version` is `0.0.1-daily.20261028` for the first target, never `delivery-v0.0.1-daily.20261028`. Distribution here does not imply that the product was built here.
+5. Publish the five application packages under `ghcr.io/ob-labs/ai-vision-skills/`: `aivision-be`, `aivision-fe`, `agentlens`, `antcollector-gw`, and `signoz-ob`. Optional database mirrors are `oceanbase-ce` and `seekdb` in the same namespace. Use the manifest's exact references and digests; never derive an image reference from the Release tag. Native deployment vars must include `NATIVE_PYTHON_RUNTIME: "true"`.
+6. Complete all AMD64 publication and validation before processing ARM. Provide the exact version, archive checksums, image digests, and actual platforms to the existing offline/manual security scanning process. Add no scanner CI, mandatory reports, or extra repository/package access grants.
+7. Verify the published assets, recipient CLI installation, both supported Docker datastore paths, and actual telemetry ingestion/readback before claiming the combination is ready. Keep Docker, Kubernetes, ARM, and real-model evidence distinct.
 
-Do not guess a trial tag, use `releases/latest` to resolve a trial prerelease, or substitute mutable Dev images when a requested version is missing. Until this channel exists, use an existing compatible CLI or an available authorized product Release and state the missing delivery capability clearly.
+| First-delivery asset | Purpose |
+| --- | --- |
+| `aiv-linux-x64.tar.gz` | Linux x64 CLI, with the actual product version |
+| `install-aiv.sh` | Installer configured for authenticated private delivery |
+| `release-manifest.json` | Product/build provenance, exact image references, and platform evidence |
+| `release-images.vars.yaml` | Matching OceanBase CE deployment variables |
+| `release-seekdb.vars.yaml` | Matching seekdb deployment variables |
+| `SHA256SUMS` | One checksum for each of the other five assets |
+
+Resolve restricted Daily downloads against the fixed tag in this repository and confirm that it is a published prerelease with the required assets. Do not follow the old product `daily` pointer, use `releases/latest` for a prerelease, or substitute mutable Dev images when the requested version is missing. A missing compatible Release or platform stops installation and preserves the installed binary. Stable product Releases may retain their original channel; their existence does not establish today's restricted Daily.
 
 ## Authentication boundaries
 
