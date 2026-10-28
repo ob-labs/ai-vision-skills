@@ -6,6 +6,8 @@ This private repository owns the four maintained Skills and the restricted-trial
 
 The first delivery target is product version `0.0.1-daily.20261028`, GitHub tag `delivery-v0.0.1-daily.20261028`. It supports the Linux x64 CLI and `linux/amd64` images only. Finish publication and full validation for all AMD64 artifacts before processing ARM. Adding ARM support requires a new Daily revision, such as `.2`, without changing the published x86 archives, images, or checksums of the earlier delivery.
 
+The native Agent onboarding client requires Linux x64 with glibc 2.35 or newer. Debian Bookworm is the qualified client runtime. Check the Agent machine separately from the deployment machine: the static Go CLI and containerized services can run on a Docker host whose glibc is older. Such a host does not qualify the native installer; glibc 2.32 cannot launch this bundle. Keep the client ABI and actual test environment explicit in delivery evidence, and use a compatible Agent machine rather than a source-installer fallback.
+
 Existing organization and repository permissions apply; this delivery adds no user or team access grants. Access by a recipient without product-source permissions must be checked independently. A maintainer's successful clone or package push does not prove recipient access.
 
 ## Permanent ownership

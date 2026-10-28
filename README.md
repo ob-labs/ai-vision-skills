@@ -40,6 +40,8 @@ The first delivery allows exactly six Release assets: `aiv-linux-x64.tar.gz`, `i
 
 Application images use `ghcr.io/ob-labs/ai-vision-skills/{aivision-be,aivision-fe,agentlens,antcollector-gw,signoz-ob}`. Use the manifest's exact digest references and separately verified image access. Optional database mirrors use `oceanbase-ce` and `seekdb` under that namespace only when named in the manifest. Product source and build provenance remain unchanged. Security scanning follows the team's existing offline/manual process.
 
+The native Agent installer runs on the Agent's own Linux x64 machine and requires glibc 2.35 or newer; its qualified client runtime is Debian Bookworm. Check `getconf GNU_LIBC_VERSION` there before onboarding. This client requirement is separate from the static Go CLI and Docker services, whose runtime libraries live inside their images. An older Docker host does not establish native Agent installer compatibility.
+
 After the product becomes open source, product binaries return to the product Release channel and this repository continues to maintain Skills only. Installation commands and Skill names stay the same. Review restricted historical Release assets and temporary credentials before changing repository visibility. See [distribution ownership](docs/distribution.md).
 
 ## Development
