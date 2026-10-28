@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI Vision Quickstart"
+  short_description: "Try real Traces, Sessions and diagnosis with a test Agent"
+  default_prompt: "Use $aivision-quickstart to configure my model on an existing AI Vision instance and run a test Agent so I can explore Trace, Session and diagnosis."

@@ -1,0 +1,3 @@
+# Demo package pins, not minimum versions for existing applications.
+langfuse==5.0.2
+openai==2.54.0

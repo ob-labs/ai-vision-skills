@@ -1,0 +1,38 @@
+name: Skills
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  catalog:
+    runs-on: ubuntu-latest
+    env:
+      DISABLE_TELEMETRY: '1'
+      DO_NOT_TRACK: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          # skills@1.7.4 declares Node >=22.20.0.
+          node-version: '22.20.0'
+      - name: Catalog regression tests
+        run: python3 -m unittest discover -s tests -v
+      - name: Quickstart fixture tests
+        run: |
+          python3 -m pip install -r skills/aivision-quickstart/scripts/requirements.txt
+          python3 -m unittest discover -s skills/aivision-quickstart/tests -v
+      - name: Self-contained resources
+        run: python3 scripts/check_catalog.py
+      - name: Upstream discovery and independent installations
+        # Runs npx --yes skills@1.7.4 add . --list, then each discovered Skill
+        # with --skill <name> --agent codex --copy --yes in disposable projects.
+        run: python3 scripts/check_installation.py
