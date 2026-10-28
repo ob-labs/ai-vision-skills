@@ -5,6 +5,13 @@ deployment target first, then check only the tools required for that target.
 The CLI is also usable manually; installing or deploying with `aiv` does not
 require this Skill.
 
+For the restricted `0.0.1-daily.20261028.2` native CLI, select default Docker or
+CLI-managed `--target compose` with matching native release variables. It rejects
+standalone `--compose-file`. The existing-file instructions below require an
+ordinary source CLI build; if upgrading such an installation, stop before
+replacing its CLI or changing its configuration or services. No automatic
+conversion is provided.
+
 ## Requirements by target
 
 | Requirement | Needed when |
@@ -18,8 +25,7 @@ require this Skill.
 | CPU, memory, and storage | According to the selected target and datastore. Reusing OceanBase CE or seekdb removes the bundled datastore requirement, not the resources needed by the remaining services. |
 | Network access | Whenever CLI assets, images, or dependencies must be downloaded or refreshed, including retries and upgrades. Do not assume only the first `cast` needs network access. |
 
-The current restricted Daily target `0.0.1-daily.20261028.2` selects Linux x64 and ARM64
-CLI archives and both Linux image architectures. A platform
+The current restricted Daily delivery is Linux x64 / `linux/amd64` only. A platform
 listed in a generic CLI recipe is not available unless that exact published
 delivery includes its archive and validated images. Native deployment sets
 `NATIVE_PYTHON_RUNTIME: "true"`; deploying or installing a native Agent does not
@@ -53,7 +59,8 @@ Native delivery images provide their bootstrap executables with
 runtime mode. Default Docker stays the supported Go runtime and does not gain
 a Compose prerequisite.
 
-Use explicit --target compose on every CLI operation. Existing files use
+Use explicit --target compose on every CLI operation. With ordinary source CLI
+builds only, existing files use
 --compose-file absolute.yaml and --compose-env-file actual.env (default .env,
 /dev/null for resolved exports), without namespace/workdir/vars/blueprint options.
 Native config --quiet/ps/logs pin the original project name, absolute file and env.
@@ -83,18 +90,24 @@ Source CLI builds additionally require Python 3 for the asset freshness check.
 After editing authoritative assets, run `make assets` in `aivision-cli/`, then
 `make build`; normal builds check the committed generated files without changing them.
 
+The corrected restricted `.2` CLI has a native-only compile-time profile.
+A source-mode CLI with the same version text is not equivalent: install the
+checksummed archive from the selected private Release. The earlier `.20261028`
+CLI embeds Python deployment helpers and needs replacement for strict delivery.
+Native builds reject explicit source runtime/installer choices and standalone
+`--compose-file`; use CLI-managed `--target compose` with the native release vars.
+
 ## Native Agent client runtime
 
-For this restricted Daily, use the matching Linux x64 or ARM64 native bundle on
-Debian Bookworm (glibc 2.36). Keep each architecture's actual client and ABI
-evidence from the selected release; the first x86 bundle requires glibc symbols
-available from 2.35. Check the **Agent's own machine** before `aiv connect`:
+For this restricted Daily, run native Agent onboarding on Linux x64 with glibc
+2.35 or newer. The qualified client runtime is Debian Bookworm. Check the
+**Agent's own machine** before `aiv connect`:
 
 ```bash
 getconf GNU_LIBC_VERSION
 ```
 
-Use the recorded compatible client runtime for that architecture. A missing glibc
+If glibc is older than 2.35, use a compatible Agent machine. A missing glibc
 symbol is an incompatible client runtime; installing host Python does not fix
 the native bundle. The static Go CLI and Docker services have separate runtime
 requirements: application runtime libraries are inside their images. Successful
@@ -200,22 +213,17 @@ tag with its actual resolved values. Choose the datastore's vars asset:
 AIV_RELEASE_TAG=delivery-v0.0.1-daily.20261028.2
 AIV_DELIVERY_REPOSITORY=ob-labs/ai-vision-skills
 AIV_IMAGE_VARS=release-images.vars.yaml  # CE; use release-seekdb.vars.yaml for Docker seekdb
-case "$(uname -s)/$(uname -m)" in
-  Linux/x86_64|Linux/amd64) AIV_PACKAGE=aiv-linux-x64.tar.gz ;;
-  Linux/aarch64|Linux/arm64) AIV_PACKAGE=aiv-linux-arm64.tar.gz ;;
-  *) echo 'This delivery supplies Linux x64 and ARM64 only.' >&2; exit 1 ;;
-esac
+AIV_PACKAGE=aiv-linux-x64.tar.gz
 ```
 
 | Current restricted Daily platform | Availability |
 | --- | --- |
-| Linux x64 | `aiv-linux-x64.tar.gz`; select the native `linux/amd64` image children |
-| Linux ARM64 | `aiv-linux-arm64.tar.gz`; select the native `linux/arm64` image children |
-| macOS | Not included; stop unless another compatible published delivery supplies this platform |
+| Linux x64 | `aiv-linux-x64.tar.gz`; images are `linux/amd64` |
+| Linux ARM64 or macOS | Not included; stop unless another compatible published delivery explicitly supplies this platform |
 
 Use authenticated `gh` to inspect the exact tag and its actual asset list before
 downloading. For a Daily, require `isDraft: false`, `isPrerelease: true`, and
-the selected `tagName`. This revision must have exactly the seven assets listed
+the selected `tagName`. The current target must have exactly the six assets listed
 below; missing or extra assets require resolving the publication:
 
 ```bash
@@ -224,12 +232,11 @@ gh release view "$AIV_RELEASE_TAG" -R "$AIV_DELIVERY_REPOSITORY" \
   --json tagName,isDraft,isPrerelease,publishedAt,assets
 ```
 
-The allowlist is `aiv-linux-x64.tar.gz`, `aiv-linux-arm64.tar.gz`, `install-aiv.sh`,
+The allowlist is `aiv-linux-x64.tar.gz`, `install-aiv.sh`,
 `release-manifest.json`, `release-images.vars.yaml`,
 `release-seekdb.vars.yaml`, and `SHA256SUMS`. It excludes plans, plugin
-archives, source bundles and logs. Confirm the deployment host is Linux x64 or
-ARM64 before using this revision. The first x86-only delivery keeps its original
-six assets; do not apply the seven-asset check to it. Then download the selected files:
+archives, source bundles and logs. Confirm the deployment host is Linux x64
+before using this corrected target. Then download the selected files:
 
 ```bash
 gh auth status --hostname github.com &&
@@ -270,14 +277,13 @@ Restricted Daily service references use
 and the manifest's exact digest pins. Optional database mirrors use
 `oceanbase-ce` and `seekdb` under that namespace only when the manifest names
 them. Never guess tags or replace digest pins. Require the declared image
-platforms to include the actual deployment host; this revision declares both
-`linux/amd64` and `linux/arm64`. The native vars must set `NATIVE_PYTHON_RUNTIME: "true"`;
+platforms to include the actual deployment host; this target is
+`linux/amd64` only. The native vars must set `NATIVE_PYTHON_RUNTIME: "true"`;
 keep that value when merging configuration. For restricted Daily, also confirm
 `delivery.repository` and `delivery.release_tag` identify this exact Skills
 Release, `delivery.catalog_sha` identifies its catalog commit, and
-`source_repository` remains `ob-labs/ai-vision-ob`. This revision requires
-`cli_platforms: ["linux-x64", "linux-arm64"]` and
-`image_platforms: ["linux/amd64", "linux/arm64"]`.
+`source_repository` remains `ob-labs/ai-vision-ob`. The current target requires
+`cli_platforms: ["linux-x64"]` and `image_platforms: ["linux/amd64"]`.
 Component build identities and
 source URLs remain original and may predate this delivery. Retain this
 manifest and the verified vars asset in the
@@ -410,9 +416,8 @@ above before reporting a finished installation.
 For seekdb, confirm the selected Release includes `OB_BACKEND` support. If it
 does not, report the missing compatible Release; do not build from source as a
 trial fallback. CLI platform support does not prove native datastore image
-support. The CLI default seekdb pin is Linux/amd64; the restricted `.2`
-delivery overrides it with the exact dual-architecture `OB_IMAGE` from its
-manifest. Other releases need emulation or a separately validated image on ARM.
+support: the pinned seekdb image is Linux/amd64, so ARM needs Docker emulation
+or a separately validated `OB_IMAGE`.
 
 ### Source build identity and verification
 

@@ -20,11 +20,15 @@ installation or an upgrade is needed.
 Use the deployment's compatible published versioned Release. Restricted Daily
 downloads use `ob-labs/ai-vision-skills` and a fixed
 `delivery-v<product-version>` prerelease. The current target below is
-`delivery-v0.0.1-daily.20261028.2`, with Linux x64 and ARM64 CLI archives and
-both Linux image architectures. These assignments do not prove publication;
-inspect the exact tag and required assets before use. The completed first
-x86-only delivery remains available under `delivery-v0.0.1-daily.20261028`
-with its original bytes and checksums.
+`delivery-v0.0.1-daily.20261028.2`, with only `aiv-linux-x64.tar.gz` and
+`linux/amd64` images. These assignments do not prove publication; inspect the
+exact tag and required assets before use. Finish all AMD64 publication and
+validation before processing ARM; later ARM support uses a new Daily revision
+and preserves the earlier delivery's published x86 bytes.
+
+The corrected `.2` CLI excludes legacy first-party Python resources at link time.
+Do not use `delivery-v0.0.1-daily.20261028` for strict native delivery: its CLI
+contains source-mode deployment helpers. Published old bytes remain historical.
 
 Use the operator's authenticated `gh` account with authorized read access; do
 not share tokens. Do not resolve this Daily through the old product `daily`
@@ -42,6 +46,8 @@ export PATH="$HOME/.local/bin:$PATH"
   set -eu
   AIV_REPOSITORY=ob-labs/ai-vision-skills
   AIV_TAG=delivery-v0.0.1-daily.20261028.2
+  [ "$AIV_TAG" != delivery-v0.0.1-daily.20261028 ] ||
+    { echo 'Select the corrected .2 Daily; the earlier CLI contains legacy Python resources.' >&2; exit 1; }
   case "$AIV_TAG" in
     delivery-v*) AIV_PRODUCT_VERSION=${AIV_TAG#delivery-v}; AIV_PRERELEASE=true ;;
     v*) AIV_PRODUCT_VERSION=${AIV_TAG#v}; AIV_PRERELEASE=false ;;
@@ -57,13 +63,9 @@ export PATH="$HOME/.local/bin:$PATH"
     arm64|aarch64) AIV_ARCH=arm64 ;;
     *) echo 'Supported architectures: x64 and arm64' >&2; exit 1 ;;
   esac
-  if [ "$AIV_TAG" = delivery-v0.0.1-daily.20261028 ] &&
-      [ "$AIV_PLATFORM-$AIV_ARCH" != linux-x64 ]; then
-    echo 'This first Daily delivery supports Linux x64 only.' >&2; exit 1
-  fi
   if [ "$AIV_TAG" = delivery-v0.0.1-daily.20261028.2 ] &&
-      [ "$AIV_PLATFORM" != linux ]; then
-    echo 'This Daily revision supplies Linux x64 and ARM64 only.' >&2; exit 1
+      [ "$AIV_PLATFORM-$AIV_ARCH" != linux-x64 ]; then
+    echo 'This current Daily delivery supports Linux x64 only.' >&2; exit 1
   fi
   AIV_PACKAGE="aiv-$AIV_PLATFORM-$AIV_ARCH.tar.gz"
   AIV_TEMP=$(mktemp -d)
@@ -77,20 +79,14 @@ export PATH="$HOME/.local/bin:$PATH"
     --jq "select(.isDraft == false and .isPrerelease == $AIV_PRERELEASE) | .tagName")
   [ "$AIV_RESOLVED_TAG" = "$AIV_TAG" ] ||
     { echo 'The exact published Release is unavailable or has the wrong channel.' >&2; exit 1; }
-  case "$AIV_TAG" in
-    delivery-v0.0.1-daily.20261028|delivery-v0.0.1-daily.20261028.2)
-      AIV_ASSETS=$(gh release view "$AIV_TAG" -R "$AIV_REPOSITORY" \
-        --json assets --jq '.assets[].name' | LC_ALL=C sort)
-      AIV_EXPECTED_ASSETS=$(printf '%s\n' aiv-linux-x64.tar.gz install-aiv.sh \
-        release-manifest.json release-images.vars.yaml release-seekdb.vars.yaml SHA256SUMS)
-      if [ "$AIV_TAG" = delivery-v0.0.1-daily.20261028.2 ]; then
-        AIV_EXPECTED_ASSETS=$(printf '%s\n' "$AIV_EXPECTED_ASSETS" aiv-linux-arm64.tar.gz)
-      fi
-      AIV_EXPECTED_ASSETS=$(printf '%s\n' "$AIV_EXPECTED_ASSETS" | LC_ALL=C sort)
-      [ "$AIV_ASSETS" = "$AIV_EXPECTED_ASSETS" ] ||
-        { echo 'The selected Daily requires exactly its approved assets.' >&2; exit 1; }
-      ;;
-  esac
+  if [ "$AIV_TAG" = delivery-v0.0.1-daily.20261028.2 ]; then
+    AIV_ASSETS=$(gh release view "$AIV_TAG" -R "$AIV_REPOSITORY" \
+      --json assets --jq '.assets[].name' | LC_ALL=C sort)
+    AIV_EXPECTED_ASSETS=$(printf '%s\n' aiv-linux-x64.tar.gz install-aiv.sh \
+      release-manifest.json release-images.vars.yaml release-seekdb.vars.yaml SHA256SUMS | LC_ALL=C sort)
+    [ "$AIV_ASSETS" = "$AIV_EXPECTED_ASSETS" ] ||
+      { echo 'The current Daily requires exactly its six approved assets.' >&2; exit 1; }
+  fi
   gh release download "$AIV_TAG" -R "$AIV_REPOSITORY" \
     -p "$AIV_PACKAGE" -p SHA256SUMS --dir "$AIV_TEMP"
   if command -v sha256sum >/dev/null 2>&1; then
@@ -121,7 +117,7 @@ export PATH="$HOME/.local/bin:$PATH"
 A failed download, checksum or executable check stops installation and preserves
 the existing binary. Do not continue with stale output from an earlier attempt.
 The `delivery-v` tag prefix is distribution metadata; `aiv --version` prints the
-product version (`0.0.1-daily.20261028.2` for the current target). The checksummed
+product version (`0.0.1-daily.20261028.2` for this target). The checksummed
 `install-aiv.sh` asset is an alternative only when it uses authenticated `gh`
 for private downloads and the same fixed repository/tag. This CLI installation
 does not require user-installed Python. The separate Quickstart Python SDK demo
