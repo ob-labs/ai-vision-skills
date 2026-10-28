@@ -43,8 +43,9 @@ An inspection-only request does not authorize upgrade or container removal.
    one versioned Release and its matching CLI, manifest and backend-specific
    vars. Restricted Daily uses the exact published
    `delivery-v<product-version>` prerelease in `ob-labs/ai-vision-skills`; do not
-   follow the old product `daily` pointer. The first target is
-   `delivery-v0.0.1-daily.20261028`, Linux x64 / `linux/amd64` only; confirm the
+   follow the old product `daily` pointer. The current target is
+   `delivery-v0.0.1-daily.20261028.2`, with Linux x64/ARM64 CLI archives and
+   both Linux image architectures; confirm the
    Release and platform exist before changing an installed CLI. A retry keeps
    that resolved version. CLI installation alone does
    not upgrade running services. Preserve the old restore set before installing
