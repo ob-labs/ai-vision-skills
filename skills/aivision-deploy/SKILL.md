@@ -39,12 +39,11 @@ combination, and upgrades use the channel or version the user requested.
 Resolve either choice to a **published versioned GitHub Release** before installing:
 Release uses the product repository's latest stable Release. During the restricted
 trial, Daily uses a fixed `delivery-v<product-version>` prerelease in
-`ob-labs/ai-vision-skills`, starting with target
-`delivery-v0.0.1-daily.20261028`. Verify that exact tag and its required assets;
-this guide does not establish that it has been published. The first delivery
-supports only the Linux x64 CLI and `linux/amd64` images. Complete all AMD64
-publication and full validation before processing ARM; adding ARM uses a new
-Daily revision and preserves the previous delivery's published x86 bytes.
+`ob-labs/ai-vision-skills`, with current target
+`delivery-v0.0.1-daily.20261028.2`. Verify that exact tag and its required assets;
+this guide does not establish publication. This revision selects Linux x64 and
+ARM64 CLI archives plus both Linux image architectures. The completed first
+x86-only delivery retains its original tag, assets, and image references.
 Daily versions use a fixed snapshot date: `0.0.1-daily.20261028` for the first
 version on that date and `.2`, `.3`, and later for
 additional accepted versions on that date. Retries or work crossing midnight
@@ -160,8 +159,9 @@ Record a new deployment's choice as `OB_BACKEND: "oceanbase"` or
 selection across subsequent casts, together with the fixed history start.
 
 Other platform services need additional resources. The default seekdb image is
-Linux/amd64; ARM requires suitable Docker emulation or a separately validated
-`OB_IMAGE`.
+Linux/amd64. The restricted `.2` delivery supplies an explicit dual-architecture
+`OB_IMAGE` in its matching vars. Other releases require suitable Docker emulation
+or a separately validated image on ARM.
 Use the matching CLI from the selected Release and confirm `OB_BACKEND` support
 when choosing seekdb; see [prerequisites](reference/prerequisites.md).
 
