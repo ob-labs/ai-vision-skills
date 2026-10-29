@@ -19,17 +19,19 @@ installation or an upgrade is needed.
 
 Use the deployment's compatible published versioned Release. Restricted Daily
 downloads use `ob-labs/ai-vision-skills` and a fixed
-`delivery-v<product-version>` prerelease. The prepared default below is
+`delivery-v<product-version>` prerelease. The selected default below is
 `delivery-v0.0.1-daily.20261029`, selecting Linux x64 or ARM64 CLI archives with
 `uname` and declaring both `linux/amd64` and `linux/arm64` service images.
-This target remains planned until its exact prerelease and all seven assets are
-published and verified; catalog changes do not establish release or runtime
-acceptance. An absent or draft Release stops installation. The explicitly selected
-older `delivery-v0.0.1-daily.20261028.2` remains Linux x64 only.
+It is available only after its exact prerelease is published and all seven assets
+are verified. Catalog changes do not establish release or runtime acceptance.
+An absent or draft Release stops installation and preserves the installed binary.
+Older trial Releases are retired after the replacement is verified; do not use
+an older version as a download fallback. The `.20261028.2` branch below preserves
+historical x64-only reader compatibility, not download availability.
 
-Both the corrected `.2` and new native CLI profile exclude legacy first-party Python resources at link time.
-Do not use `delivery-v0.0.1-daily.20261028` for strict native delivery: its CLI
-contains source-mode deployment helpers. Published old bytes remain historical.
+The native CLI profile excludes legacy first-party Python resources at link time.
+The retired `delivery-v0.0.1-daily.20261028` CLI contains source-mode helpers and
+must not be used for strict native delivery.
 
 Use the operator's authenticated `gh` account with authorized read access; do
 not share tokens. Do not resolve this Daily through the old product `daily`
@@ -141,7 +143,7 @@ the deployment Skill.
 A failed download, checksum or executable check stops installation and preserves
 the existing binary. Do not continue with stale output from an earlier attempt.
 The `delivery-v` tag prefix is distribution metadata; `aiv --version` prints the
-product version (`0.0.1-daily.20261029` for the prepared default). The checksummed
+product version (`0.0.1-daily.20261029` for the selected default). The checksummed
 `install-aiv.sh` asset is an alternative only when it uses authenticated `gh`
 for private downloads and the same fixed repository/tag. This CLI installation
 does not require user-installed Python. The separate Quickstart Python SDK demo

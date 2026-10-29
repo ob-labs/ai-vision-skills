@@ -4,7 +4,7 @@ Use the existing CLI lifecycle; do not introduce another upgrade controller.
 This reference covers default Docker and optional Compose. Kubernetes keeps its
 [target-specific workflow](kubernetes.md).
 
-The restricted native CLI (`.20261028.2` and the prepared `.20261029`) supports default Docker and
+The restricted native CLI profile, including `.20261029`, supports default Docker and
 CLI-managed Compose. It rejects existing-file / standalone `--compose-file`
 deployments. If the existing installation uses that mode, stop before replacing
 the CLI, changing configuration or mutating services. Keep its compatible CLI
@@ -53,9 +53,10 @@ An inspection-only request does not authorize upgrade or container removal.
    vars. Restricted Daily uses the exact published
    `delivery-v<product-version>` prerelease in `ob-labs/ai-vision-skills`; do not
    follow the old product `daily` pointer. The current target is
-   `delivery-v0.0.1-daily.20261029`, selecting Linux x64/ARM64 and both native
-   service architectures only after its exact prerelease and assets are published;
-   explicit older `.20261028.2` remains x64 only. Confirm the
+   `delivery-v0.0.1-daily.20261029`, selecting Linux x64/ARM64 and both service
+   architectures only after its exact prerelease and assets are verified. Older
+   trial Releases are retired after the replacement is verified; preserve an
+   existing restore set locally rather than relying on an old download. Confirm the
    Release and platform exist before changing an installed CLI. A retry keeps
    that resolved version. CLI installation alone does
    not upgrade running services. Preserve the old restore set before installing
