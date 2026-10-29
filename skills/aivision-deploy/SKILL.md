@@ -39,12 +39,16 @@ combination, and upgrades use the channel or version the user requested.
 Resolve either choice to a **published versioned GitHub Release** before installing:
 Release uses the product repository's latest stable Release. During the restricted
 trial, Daily uses a fixed `delivery-v<product-version>` prerelease in
-`ob-labs/ai-vision-skills`, with current corrected target
-`delivery-v0.0.1-daily.20261028.2`. Verify that exact tag and its required assets;
-this guide does not establish that it has been published. The current delivery
-supports only the Linux x64 CLI and `linux/amd64` images. Complete all AMD64
-publication and full validation before processing ARM; adding ARM uses a new
-Daily revision and preserves the previous delivery's published x86 bytes.
+`ob-labs/ai-vision-skills`, with selected default
+`delivery-v0.0.1-daily.20261029`. This target is available only after the exact
+prerelease is published and all seven required assets are verified. Its selected
+platforms are Linux x64 and ARM64 CLI archives plus `linux/amd64` and
+`linux/arm64` service indices. The bundled [CLI recipe](reference/install-cli.md)
+selects the local CLI archive automatically; Docker selects each native service
+child for its own host from the same pinned index. Older trial Release downloads
+are retired after the replacement is verified; do not use them as fallback.
+Historical `.20261028.2` reader compatibility is x64-only and is not an
+availability promise. A missing selected Release stops the install.
 Daily versions use a fixed snapshot date: `0.0.1-daily.20261028` for the first
 version on that date and `.2`, `.3`, and later for
 additional accepted versions on that date. Retries or work crossing midnight
@@ -57,8 +61,8 @@ instead of silently substituting `dev` or claiming a build is from today.
 Follow [version resolution and downloads](reference/prerequisites.md#resolve-the-version-and-download-matching-assets)
 for matching CLI, checksums, image manifest and deployment variables.
 
-The corrected `.2` restricted CLI excludes source-mode Python resources before
-linking. The earlier `.20261028` CLI does not meet that boundary. Use matching
+The restricted native CLI profile, including the selected `.20261029` target,
+excludes source-mode Python resources before linking. The earlier `.20261028` CLI does not meet that boundary. Use matching
 native image vars; explicit source modes and source installers are rejected.
 CLI-managed `--target compose` remains available. Standalone `--compose-file`
 is unsupported by this private native build; ordinary source builds retain it.
@@ -165,9 +169,10 @@ Record a new deployment's choice as `OB_BACKEND: "oceanbase"` or
 `OB_BACKEND: "seekdb"` in its private vars file prepared below. Retain that
 selection across subsequent casts, together with the fixed history start.
 
-Other platform services need additional resources. The default seekdb image is
-Linux/amd64; ARM requires suitable Docker emulation or a separately validated
-`OB_IMAGE`.
+Other platform services need additional resources. Use the selected manifest's
+fixed upstream seekdb digest and confirm its platform index includes the actual
+Docker daemon architecture. A CLI archive alone does not establish native
+seekdb support; a missing child must be resolved before deployment.
 Use the matching CLI from the selected Release and confirm `OB_BACKEND` support
 when choosing seekdb; see [prerequisites](reference/prerequisites.md).
 

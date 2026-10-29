@@ -5,7 +5,8 @@ deployment target first, then check only the tools required for that target.
 The CLI is also usable manually; installing or deploying with `aiv` does not
 require this Skill.
 
-For the restricted `0.0.1-daily.20261028.2` native CLI, select default Docker or
+For the restricted native CLI profile, including the selected
+`0.0.1-daily.20261029` target, use default Docker or
 CLI-managed `--target compose` with matching native release variables. It rejects
 standalone `--compose-file`. The existing-file instructions below require an
 ordinary source CLI build; if upgrading such an installation, stop before
@@ -25,8 +26,12 @@ conversion is provided.
 | CPU, memory, and storage | According to the selected target and datastore. Reusing OceanBase CE or seekdb removes the bundled datastore requirement, not the resources needed by the remaining services. |
 | Network access | Whenever CLI assets, images, or dependencies must be downloaded or refreshed, including retries and upgrades. Do not assume only the first `cast` needs network access. |
 
-The current restricted Daily delivery is Linux x64 / `linux/amd64` only. A platform
-listed in a generic CLI recipe is not available unless that exact published
+The selected `delivery-v0.0.1-daily.20261029` target selects Linux x64/ARM64 CLI
+archives and `linux/amd64`/`linux/arm64` service indices. It is available only after
+the exact prerelease is published and all seven assets are verified. Older trial
+Releases are retired after the replacement is verified; historical `.20261028.2`
+reader compatibility is x64-only and does not guarantee a download. A platform
+listed in a generic CLI recipe is unavailable unless that exact published
 delivery includes its archive and validated images. Native deployment sets
 `NATIVE_PYTHON_RUNTIME: "true"`; deploying or installing a native Agent does not
 require user-installed Python. The separate Quickstart Python SDK demo and
@@ -90,7 +95,7 @@ Source CLI builds additionally require Python 3 for the asset freshness check.
 After editing authoritative assets, run `make assets` in `aivision-cli/`, then
 `make build`; normal builds check the committed generated files without changing them.
 
-The corrected restricted `.2` CLI has a native-only compile-time profile.
+The restricted trial CLI has a native-only compile-time profile.
 A source-mode CLI with the same version text is not equivalent: install the
 checksummed archive from the selected private Release. The earlier `.20261028`
 CLI embeds Python deployment helpers and needs replacement for strict delivery.
@@ -99,7 +104,8 @@ Native builds reject explicit source runtime/installer choices and standalone
 
 ## Native Agent client runtime
 
-For this restricted Daily, run native Agent onboarding on Linux x64 with glibc
+For the selected restricted Daily, verify that the backend serves the Agent's
+own Linux x64 or ARM64 native installer, then require glibc
 2.35 or newer. The qualified client runtime is Debian Bookworm. Check the
 **Agent's own machine** before `aiv connect`:
 
@@ -153,7 +159,8 @@ Follow the [channel choice](../SKILL.md#choose-release-or-daily), then inspect t
 exact published GitHub Release using the operator's authenticated `gh` account.
 Restricted Daily delivery uses `ob-labs/ai-vision-skills` and immutable
 `delivery-v<product-version>` prerelease tags. The current target is
-`delivery-v0.0.1-daily.20261028.2`; confirm publication before using it. A catalog
+`delivery-v0.0.1-daily.20261029`; use it only after publication and verification of
+the exact prerelease and all seven assets. A catalog
 change or registry probe does not establish that this Release exists. Repository
 access, Release downloads and image pulls must each work for the operator; do
 not share tokens or rewrite product source/build provenance.
@@ -161,7 +168,7 @@ not share tokens or rewrite product source/build provenance.
 | Choice | Resolve once, before downloading |
 | --- | --- |
 | Release (default) | Read the [latest stable Release](https://github.com/ob-labs/ai-vision-ob/releases/latest), or `GET https://api.github.com/repos/ob-labs/ai-vision-ob/releases/latest`. Use its published versioned `tag_name`; drafts and prereleases are excluded. |
-| Daily | Inspect the fixed `delivery-v<product-version>` prerelease in `ob-labs/ai-vision-skills`; for this target, use `gh release view delivery-v0.0.1-daily.20261028.2 --repo ob-labs/ai-vision-skills`. Confirm it is published, is a prerelease, and includes the assets and platforms required below. Keep that tag for the whole operation. |
+| Daily | Inspect the fixed `delivery-v<product-version>` prerelease in `ob-labs/ai-vision-skills`; for this target, use `gh release view delivery-v0.0.1-daily.20261029 --repo ob-labs/ai-vision-skills`. Confirm it is published, is a prerelease, and includes the assets and platforms required below. Keep that tag for the whole operation. |
 | Explicit version | Inspect the exact versioned Release in its delivery repository. Restricted Daily versions use the Skills repository and `delivery-v` prefix; stable product Releases retain the product repository and their published `v` tag. Confirm the requested product version and assets. |
 
 Published GitHub Releases define the installable versions. Do not enumerate Git
@@ -182,9 +189,11 @@ after midnight or a retry does not change that date; `built_at` records the
 actual build time. The first accepted Daily on that date has no revision
 suffix; additional accepted versions use `.2`, `.3`, and later. Never derive a
 Daily version from workflow run counters or attempts, and never overwrite an
-accepted version with changed release content. Complete all AMD64 publication
-and full validation before processing ARM; any later ARM delivery uses a new
-Daily revision and preserves the earlier delivery's x86 bytes and checksums.
+accepted version with changed release content. A new dual-platform delivery
+requires accepted results for its declared platform/datastore validation matrix.
+Read the Release notes for native, emulated and mixed-platform database coverage;
+artifact architecture alone is not runtime proof. Keep historical checksums and
+private evidence when older Release downloads are retired.
 Manual `dev` snapshots use a
 separate version format and are not the Daily install choice.
 
@@ -210,20 +219,30 @@ proof of publication. For a stable product Release, replace the repository and
 tag with its actual resolved values. Choose the datastore's vars asset:
 
 ```bash
-AIV_RELEASE_TAG=delivery-v0.0.1-daily.20261028.2
+AIV_RELEASE_TAG=${AIV_RELEASE_TAG:-delivery-v0.0.1-daily.20261029}
 AIV_DELIVERY_REPOSITORY=ob-labs/ai-vision-skills
 AIV_IMAGE_VARS=release-images.vars.yaml  # CE; use release-seekdb.vars.yaml for Docker seekdb
-AIV_PACKAGE=aiv-linux-x64.tar.gz
+case "$(uname -s)" in Linux) ;; *) echo 'This delivery selects Linux hosts only.' >&2; exit 1 ;; esac
+case "$(uname -m)" in
+  x86_64|amd64) AIV_PACKAGE=aiv-linux-x64.tar.gz ;;
+  aarch64|arm64) AIV_PACKAGE=aiv-linux-arm64.tar.gz ;;
+  *) echo 'Unsupported CLI architecture.' >&2; exit 1 ;;
+esac
+if [ "$AIV_RELEASE_TAG" = delivery-v0.0.1-daily.20261028.2 ] &&
+    [ "$AIV_PACKAGE" != aiv-linux-x64.tar.gz ]; then
+  echo 'The explicit .20261028.2 delivery is Linux x64 only.' >&2; exit 1
+fi
 ```
 
-| Current restricted Daily platform | Availability |
+| Prepared restricted Daily platform | Availability after publication |
 | --- | --- |
 | Linux x64 | `aiv-linux-x64.tar.gz`; images are `linux/amd64` |
-| Linux ARM64 or macOS | Not included; stop unless another compatible published delivery explicitly supplies this platform |
+| Linux ARM64 | `aiv-linux-arm64.tar.gz`; images are `linux/arm64` |
+| macOS | Not selected by this delivery; use another compatible published version or stop |
 
 Use authenticated `gh` to inspect the exact tag and its actual asset list before
 downloading. For a Daily, require `isDraft: false`, `isPrerelease: true`, and
-the selected `tagName`. The current target must have exactly the six assets listed
+the selected `tagName`. The selected dual-platform target must have exactly the seven assets listed
 below; missing or extra assets require resolving the publication:
 
 ```bash
@@ -232,11 +251,13 @@ gh release view "$AIV_RELEASE_TAG" -R "$AIV_DELIVERY_REPOSITORY" \
   --json tagName,isDraft,isPrerelease,publishedAt,assets
 ```
 
-The allowlist is `aiv-linux-x64.tar.gz`, `install-aiv.sh`,
-`release-manifest.json`, `release-images.vars.yaml`,
-`release-seekdb.vars.yaml`, and `SHA256SUMS`. It excludes plans, plugin
-archives, source bundles and logs. Confirm the deployment host is Linux x64
-before using this corrected target. Then download the selected files:
+The selected allowlist is `aiv-linux-x64.tar.gz`, `aiv-linux-arm64.tar.gz`,
+`install-aiv.sh`, `release-manifest.json`, `release-images.vars.yaml`,
+`release-seekdb.vars.yaml`, and `SHA256SUMS`. The historical `.20261028.2`
+reader format omits the ARM64 archive and is x64-only; it does not establish
+remote asset availability. Both formats exclude plans,
+plugin archives, source bundles and logs. Confirm the CLI host platform and the
+separate Docker host platform. Then download the selected files:
 
 ```bash
 gh auth status --hostname github.com &&
@@ -266,7 +287,7 @@ fi
 
 Continue only after this succeeds. Read `release-manifest.json`: its
 `product_version` must match the Daily tag after removing `delivery-v`
-(`0.0.1-daily.20261028.2` for this target), or the stable tag after removing
+(`0.0.1-daily.20261029` for the selected default), or the stable tag after removing
 its leading `v`. Its
 channel must be `stable` for Release or `daily` for Daily, and the vars image
 digests must match its `images` entries. The vars must also contain
@@ -274,16 +295,23 @@ digests must match its `images` entries. The vars must also contain
 when merging configuration; it supplies the installed product version to About.
 Restricted Daily service references use
 `ghcr.io/ob-labs/ai-vision-skills/{aivision-be,aivision-fe,agentlens,antcollector-gw,signoz-ob}`
-and the manifest's exact digest pins. Optional database mirrors use
-`oceanbase-ce` and `seekdb` under that namespace only when the manifest names
-them. Never guess tags or replace digest pins. Require the declared image
-platforms to include the actual deployment host; this target is
-`linux/amd64` only. The native vars must set `NATIVE_PYTHON_RUNTIME: "true"`;
+and the manifest's exact digest pins. Database dependencies must use the
+manifest's fixed official upstream `oceanbase/oceanbase-ce` and `oceanbase/seekdb`
+refs; this namespace has no database Packages. Confirm each upstream index
+includes the deployment daemon's architecture. Never guess tags or replace
+digest pins. Require the declared image platforms to include the actual
+Docker daemon, separately from the CLI machine. The selected target declares
+both `linux/amd64` and `linux/arm64`. The native vars must set `NATIVE_PYTHON_RUNTIME: "true"`;
 keep that value when merging configuration. For restricted Daily, also confirm
 `delivery.repository` and `delivery.release_tag` identify this exact Skills
 Release, `delivery.catalog_sha` identifies its catalog commit, and
-`source_repository` remains `ob-labs/ai-vision-ob`. The current target requires
-`cli_platforms: ["linux-x64"]` and `image_platforms: ["linux/amd64"]`.
+`source_repository` remains `ob-labs/ai-vision-ob`. The selected target requires
+`cli_platforms: ["linux-x64", "linux-arm64"]` and
+`image_platforms: ["linux/amd64", "linux/arm64"]`. The historical
+`.20261028.2` reader format retains its original x64-only lists without promising
+Release availability. Docker resolves the
+native child from each pinned service index; no architecture-specific tag or
+manual replacement of image refs is needed.
 Component build identities and
 source URLs remain original and may predate this delivery. Retain this
 manifest and the verified vars asset in the
@@ -293,7 +321,10 @@ configuration to do so.
 ## Install or upgrade the CLI when needed
 
 If the installed CLI already matches the manifest and required capabilities,
-keep it. Otherwise install the verified archive from the previous step:
+keep it. Otherwise install the verified archive from the previous step. The
+independently bundled [CLI installation guide](install-cli.md) provides the same
+host detection and published-asset guards; retain the selected tag with
+`AIV_TAG="$AIV_RELEASE_TAG"` if using its download recipe:
 
 ```bash
 tar -xzf "$AIV_PACKAGE" aiv &&
@@ -416,8 +447,9 @@ above before reporting a finished installation.
 For seekdb, confirm the selected Release includes `OB_BACKEND` support. If it
 does not, report the missing compatible Release; do not build from source as a
 trial fallback. CLI platform support does not prove native datastore image
-support: the pinned seekdb image is Linux/amd64, so ARM needs Docker emulation
-or a separately validated `OB_IMAGE`.
+support: verify that the exact upstream seekdb index in the selected manifest
+has a native child for the Docker daemon. Do not substitute an emulated image,
+a mutable tag or a source build when the selected release lacks that child.
 
 ### Source build identity and verification
 

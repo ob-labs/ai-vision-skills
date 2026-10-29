@@ -8,7 +8,7 @@ Keep `skills/<name>/SKILL.md` names stable and provide concise `name` and `descr
 
 Preserve supported deployment lifecycle, identity, authentication, telemetry, and compatibility constraints. A Skill edit must not invent missing CLI capabilities, Release assets, runtime evidence, or extra user authorizations. Keep credentials in private local configuration and out of commits, screenshots, fixtures, and command output.
 
-When adding a Skill, update both catalog indexes. Preserve relevant tests and bundled dependencies. Product versioning is independent of catalog tags; reserve `skills-v<catalog-version>` for catalog-only versions. Restricted Daily delivery tags use immutable `delivery-v<product-version>` prereleases and explicit matching assets. The initial AMD64 delivery has the six-asset allowlist in [distribution ownership](docs/distribution.md); later architecture work uses a new Daily revision.
+When adding a Skill, update both catalog indexes. Preserve relevant tests and bundled dependencies. Product versioning is independent of catalog tags; reserve `skills-v<catalog-version>` for catalog-only versions. Restricted Daily delivery tags use immutable `delivery-v<product-version>` prereleases and explicit matching assets. The `.20261029` trial target has a seven-asset allowlist in [distribution ownership](docs/distribution.md). Historical tests retain the older AMD64-only six-asset format without promising old downloads. New architecture support uses a new accepted version without moving an earlier immutable tag; authorized retirement preserves private evidence and is not an automatic publication step.
 
 ## Checks
 
@@ -16,7 +16,7 @@ Use Python 3.11 or later and Node.js 22.20 or later. The pinned upstream CLI use
 
 ```bash
 python3 scripts/check_catalog.py
-python3 -m unittest discover -s tests
+python3 -m unittest discover -s tests  # includes actual shell download recipes for both Linux architectures
 python3 -m unittest discover -s skills/aivision-quickstart/tests
 npx --yes skills@1.7.4 add . --list
 git diff --check
