@@ -111,14 +111,15 @@ manifest is required for that local validation.
 For published builds, choose Release or Daily using the [shared channel flow](../SKILL.md#choose-release-or-daily)
 and download the [matching CLI and verified manifest](prerequisites.md#resolve-the-version-and-download-matching-assets).
 Restricted Daily uses an exact published `delivery-v<product-version>`
-prerelease in `ob-labs/ai-vision-skills`. The prepared default
+prerelease in `ob-labs/ai-vision-skills`. The selected default
 `delivery-v0.0.1-daily.20261029` selects Linux x64/ARM64 CLI archives and both
-native Linux service architectures, but remains planned until published and
-verified. The explicit older `.20261028.2` delivery is x64 only. Confirm the CLI
+Linux service architectures, and is available only after publication and asset
+verification. Older trial Releases are retired after the replacement is verified.
+Historical `.20261028.2` reader compatibility is x64-only. Confirm the CLI
 host and cluster node architectures independently. A Docker smoke or an OCI
 multi-platform index does not establish Kubernetes or ARM cluster acceptance;
 that evidence remains separate. Missing published assets or platform support
-stop this flow. Preserve earlier immutable releases and their x86 bytes.
+stop this flow. Retain private historical evidence; old Release downloads are not guaranteed.
 Copy `SIGNOZ_IMAGE`, `GATEWAY_IMAGE`, `BE_IMAGE`, `AGENTLENS_IMAGE`, `FE_IMAGE`
 and `AIVISION_RELEASE_MANIFEST_BASE64` from its verified CE vars asset into one private
 `aivision.k8s.vars.yaml`, retaining existing Kubernetes settings. These digest

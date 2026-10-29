@@ -39,15 +39,16 @@ combination, and upgrades use the channel or version the user requested.
 Resolve either choice to a **published versioned GitHub Release** before installing:
 Release uses the product repository's latest stable Release. During the restricted
 trial, Daily uses a fixed `delivery-v<product-version>` prerelease in
-`ob-labs/ai-vision-skills`, with prepared default
-`delivery-v0.0.1-daily.20261029`. This new target is planned until the exact
-prerelease and all seven required assets are published and verified. Its selected
+`ob-labs/ai-vision-skills`, with selected default
+`delivery-v0.0.1-daily.20261029`. This target is available only after the exact
+prerelease is published and all seven required assets are verified. Its selected
 platforms are Linux x64 and ARM64 CLI archives plus `linux/amd64` and
 `linux/arm64` service indices. The bundled [CLI recipe](reference/install-cli.md)
 selects the local CLI archive automatically; Docker selects each native service
-child for its own host from the same pinned index. The explicit older
-`.20261028.2` delivery remains x64 only. Preserve its immutable x86 bytes;
-a missing new Release stops the install rather than falling back.
+child for its own host from the same pinned index. Older trial Release downloads
+are retired after the replacement is verified; do not use them as fallback.
+Historical `.20261028.2` reader compatibility is x64-only and is not an
+availability promise. A missing selected Release stops the install.
 Daily versions use a fixed snapshot date: `0.0.1-daily.20261028` for the first
 version on that date and `.2`, `.3`, and later for
 additional accepted versions on that date. Retries or work crossing midnight
@@ -60,8 +61,8 @@ instead of silently substituting `dev` or claiming a build is from today.
 Follow [version resolution and downloads](reference/prerequisites.md#resolve-the-version-and-download-matching-assets)
 for matching CLI, checksums, image manifest and deployment variables.
 
-The corrected `.20261028.2` and prepared native CLI profile exclude source-mode Python resources before
-linking. The earlier `.20261028` CLI does not meet that boundary. Use matching
+The restricted native CLI profile, including the selected `.20261029` target,
+excludes source-mode Python resources before linking. The earlier `.20261028` CLI does not meet that boundary. Use matching
 native image vars; explicit source modes and source installers are rejected.
 CLI-managed `--target compose` remains available. Standalone `--compose-file`
 is unsupported by this private native build; ordinary source builds retain it.

@@ -341,7 +341,7 @@ docker compose --project-name "$AIV_COMPOSE_PROJECT" --file "$AIV_COMPOSE_BUNDLE
 Config --quiet avoids printing resolved secrets.
 
 The following standalone-file commands require an ordinary source CLI build.
-The restricted native CLI (`.20261028.2` and the prepared `.20261029`) rejects `--compose-file` before
+The restricted native CLI profile, including `.20261029`, rejects `--compose-file` before
 Docker or deployment-state mutation. If that is the existing deployment mode,
 stop before replacing its CLI or changing configuration or services; this
 delivery provides no automatic conversion. CLI-managed `--target compose`
