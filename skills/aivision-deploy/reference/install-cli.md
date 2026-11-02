@@ -20,13 +20,13 @@ installation or an upgrade is needed.
 Use the deployment's compatible published versioned Release. Restricted Daily
 downloads use `ob-labs/ai-vision-skills` and a fixed
 `delivery-v<product-version>` prerelease. The selected default below is
-`delivery-v0.0.1-daily.20261029`, selecting Linux x64 or ARM64 CLI archives with
+`delivery-v0.1.0-daily.20261101`, selecting Linux x64 or ARM64 CLI archives with
 `uname` and declaring both `linux/amd64` and `linux/arm64` service images.
 It is available only after its exact prerelease is published and all seven assets
 are verified. Catalog changes do not establish release or runtime acceptance.
 An absent or draft Release stops installation and preserves the installed binary.
-Older trial Releases are retired after the replacement is verified; do not use
-an older version as a download fallback. The `.20261028.2` branch below preserves
+Earlier accepted Releases remain retained unless retirement is separately
+authorized; do not silently use another version as a download fallback. The `.20261028.2` branch below preserves
 historical x64-only reader compatibility, not download availability.
 
 The native CLI profile excludes legacy first-party Python resources at link time.
@@ -48,7 +48,7 @@ export PATH="$HOME/.local/bin:$PATH"
 (
   set -eu
   AIV_REPOSITORY=${AIV_REPOSITORY:-ob-labs/ai-vision-skills}
-  AIV_TAG=${AIV_TAG:-delivery-v0.0.1-daily.20261029}
+  AIV_TAG=${AIV_TAG:-delivery-v0.1.0-daily.20261101}
   AIV_INSTALL_DIR=${AIV_INSTALL_DIR:-"$HOME/.local/bin"}
   export PATH="$AIV_INSTALL_DIR:$PATH"
   [ "$AIV_TAG" != delivery-v0.0.1-daily.20261028 ] ||
@@ -74,7 +74,7 @@ export PATH="$HOME/.local/bin:$PATH"
       [ "$AIV_PLATFORM-$AIV_ARCH" = linux-x64 ] ||
         { echo 'The explicit .20261028.2 delivery supports Linux x64 only.' >&2; exit 1; }
       AIV_APPROVED_CLI_ASSETS='aiv-linux-x64.tar.gz' ;;
-    delivery-v0.0.1-daily.20261029)
+    delivery-v0.0.1-daily.20261029|delivery-v0.1.0-daily.20261101)
       case "$AIV_PLATFORM-$AIV_ARCH" in
         linux-x64|linux-arm64) ;;
         *) echo 'This delivery selects Linux x64 and ARM64 only.' >&2; exit 1 ;;
@@ -143,7 +143,7 @@ the deployment Skill.
 A failed download, checksum or executable check stops installation and preserves
 the existing binary. Do not continue with stale output from an earlier attempt.
 The `delivery-v` tag prefix is distribution metadata; `aiv --version` prints the
-product version (`0.0.1-daily.20261029` for the selected default). The checksummed
+product version (`0.1.0-daily.20261101` for the selected default). The checksummed
 `install-aiv.sh` asset is an alternative only when it uses authenticated `gh`
 for private downloads and the same fixed repository/tag. This CLI installation
 does not require user-installed Python. The separate Quickstart Python SDK demo
