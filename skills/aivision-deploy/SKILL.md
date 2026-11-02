@@ -40,13 +40,13 @@ Resolve either choice to a **published versioned GitHub Release** before install
 Release uses the product repository's latest stable Release. During the restricted
 trial, Daily uses a fixed `delivery-v<product-version>` prerelease in
 `ob-labs/ai-vision-skills`, with selected default
-`delivery-v0.0.1-daily.20261029`. This target is available only after the exact
+`delivery-v0.1.0-daily.20261101`. This target is available only after the exact
 prerelease is published and all seven required assets are verified. Its selected
 platforms are Linux x64 and ARM64 CLI archives plus `linux/amd64` and
 `linux/arm64` service indices. The bundled [CLI recipe](reference/install-cli.md)
 selects the local CLI archive automatically; Docker selects each native service
-child for its own host from the same pinned index. Older trial Release downloads
-are retired after the replacement is verified; do not use them as fallback.
+child for its own host from the same pinned index. Earlier accepted Releases remain retained unless retirement is separately
+authorized; do not silently use another version as fallback.
 Historical `.20261028.2` reader compatibility is x64-only and is not an
 availability promise. A missing selected Release stops the install.
 Daily versions use a fixed snapshot date: `0.0.1-daily.20261028` for the first
@@ -61,7 +61,7 @@ instead of silently substituting `dev` or claiming a build is from today.
 Follow [version resolution and downloads](reference/prerequisites.md#resolve-the-version-and-download-matching-assets)
 for matching CLI, checksums, image manifest and deployment variables.
 
-The restricted native CLI profile, including the selected `.20261029` target,
+The restricted native CLI profile, including the selected `0.1.0-daily.20261101` target,
 excludes source-mode Python resources before linking. The earlier `.20261028` CLI does not meet that boundary. Use matching
 native image vars; explicit source modes and source installers are rejected.
 CLI-managed `--target compose` remains available. Standalone `--compose-file`

@@ -17,7 +17,8 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-NEW_VERSION = "0.0.1-daily.20261029"
+NEW_VERSION = "0.1.0-daily.20261101"
+PREVIOUS_VERSION = "0.0.1-daily.20261029"
 OLD_VERSION = "0.0.1-daily.20261028.2"
 SKILLS = ("aivision-deploy", "aivision-quickstart", "aivision-trace", "aivision-metric")
 
@@ -121,6 +122,21 @@ sys.exit('unexpected gh operation')
                     downloads = [call for call in result["calls"] if call[:2] == ["release", "download"]]
                     self.assertIn(asset, downloads[0])
                     self.assertEqual(downloads[0][2], "delivery-v" + NEW_VERSION)
+
+    def test_explicit_previous_dual_platform_delivery_remains_supported(self):
+        for skill in SKILLS:
+            for machine in ("x86_64", "aarch64"):
+                with self.subTest(skill=skill, arch=machine):
+                    result = self.run_recipe(skill, arch=machine,
+                                             version=PREVIOUS_VERSION, explicit=True)
+                    self.assertEqual(result["exit_code"], 0, result)
+                    self.assertIn("aiv " + PREVIOUS_VERSION, result["stdout"])
+
+    def test_unknown_daily_preserves_installed_binary(self):
+        result = self.run_recipe(version="0.1.0-daily.20261102", explicit=True)
+        self.assertNotEqual(result["exit_code"], 0)
+        self.assertEqual(result["installed"], result["original"])
+        self.assertFalse(result["calls"])
 
     def test_explicit_old_corrected_x64_delivery_still_installs(self):
         result = self.run_recipe(arch="x86_64", version=OLD_VERSION, explicit=True)

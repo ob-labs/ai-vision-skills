@@ -61,11 +61,10 @@ The command clones this Skills repository using the caller's own authorized
 GitHub/Git session; do not distribute shared tokens. An authorized operator may
 also make the complete manual copy below. Restricted Daily CLI and deployment
 metadata use an exact published `delivery-v<product-version>` prerelease in this
-repository. The selected default, `delivery-v0.0.1-daily.20261029`, selects Linux
+repository. The selected default, `delivery-v0.1.0-daily.20261101`, selects Linux
 x64 and ARM64 CLI archives and both Linux service architectures. It is available
 only after the exact prerelease is published and all seven assets are verified;
-catalog installation does not establish publication. Older trial Releases are
-retired after the replacement is verified. Historical `.20261028.2` reader
+catalog installation does not establish publication. Earlier accepted Releases remain retained unless retirement is separately authorized. Historical `.20261028.2` reader
 compatibility is x64-only and does not guarantee a download. A bundled install recipe
 automatically chooses the CLI archive with `uname`; Docker chooses the image child
 for the deployment daemon from the pinned multi-platform index. Missing assets or

@@ -6,7 +6,7 @@ The CLI is also usable manually; installing or deploying with `aiv` does not
 require this Skill.
 
 For the restricted native CLI profile, including the selected
-`0.0.1-daily.20261029` target, use default Docker or
+`0.1.0-daily.20261101` target, use default Docker or
 CLI-managed `--target compose` with matching native release variables. It rejects
 standalone `--compose-file`. The existing-file instructions below require an
 ordinary source CLI build; if upgrading such an installation, stop before
@@ -26,11 +26,12 @@ conversion is provided.
 | CPU, memory, and storage | According to the selected target and datastore. Reusing OceanBase CE or seekdb removes the bundled datastore requirement, not the resources needed by the remaining services. |
 | Network access | Whenever CLI assets, images, or dependencies must be downloaded or refreshed, including retries and upgrades. Do not assume only the first `cast` needs network access. |
 
-The selected `delivery-v0.0.1-daily.20261029` target selects Linux x64/ARM64 CLI
+The selected `delivery-v0.1.0-daily.20261101` target selects Linux x64/ARM64 CLI
 archives and `linux/amd64`/`linux/arm64` service indices. It is available only after
-the exact prerelease is published and all seven assets are verified. Older trial
-Releases are retired after the replacement is verified; historical `.20261028.2`
-reader compatibility is x64-only and does not guarantee a download. A platform
+the exact prerelease is published and all seven assets are verified. Earlier
+accepted Releases remain retained unless retirement is separately authorized.
+Historical `.20261028.2` reader compatibility is x64-only and does not guarantee
+a download. A platform
 listed in a generic CLI recipe is unavailable unless that exact published
 delivery includes its archive and validated images. Native deployment sets
 `NATIVE_PYTHON_RUNTIME: "true"`; deploying or installing a native Agent does not
@@ -159,7 +160,7 @@ Follow the [channel choice](../SKILL.md#choose-release-or-daily), then inspect t
 exact published GitHub Release using the operator's authenticated `gh` account.
 Restricted Daily delivery uses `ob-labs/ai-vision-skills` and immutable
 `delivery-v<product-version>` prerelease tags. The current target is
-`delivery-v0.0.1-daily.20261029`; use it only after publication and verification of
+`delivery-v0.1.0-daily.20261101`; use it only after publication and verification of
 the exact prerelease and all seven assets. A catalog
 change or registry probe does not establish that this Release exists. Repository
 access, Release downloads and image pulls must each work for the operator; do
@@ -168,7 +169,7 @@ not share tokens or rewrite product source/build provenance.
 | Choice | Resolve once, before downloading |
 | --- | --- |
 | Release (default) | Read the [latest stable Release](https://github.com/ob-labs/ai-vision-ob/releases/latest), or `GET https://api.github.com/repos/ob-labs/ai-vision-ob/releases/latest`. Use its published versioned `tag_name`; drafts and prereleases are excluded. |
-| Daily | Inspect the fixed `delivery-v<product-version>` prerelease in `ob-labs/ai-vision-skills`; for this target, use `gh release view delivery-v0.0.1-daily.20261029 --repo ob-labs/ai-vision-skills`. Confirm it is published, is a prerelease, and includes the assets and platforms required below. Keep that tag for the whole operation. |
+| Daily | Inspect the fixed `delivery-v<product-version>` prerelease in `ob-labs/ai-vision-skills`; for this target, use `gh release view delivery-v0.1.0-daily.20261101 --repo ob-labs/ai-vision-skills`. Confirm it is published, is a prerelease, and includes the assets and platforms required below. Keep that tag for the whole operation. |
 | Explicit version | Inspect the exact versioned Release in its delivery repository. Restricted Daily versions use the Skills repository and `delivery-v` prefix; stable product Releases retain the product repository and their published `v` tag. Confirm the requested product version and assets. |
 
 Published GitHub Releases define the installable versions. Do not enumerate Git
@@ -219,7 +220,7 @@ proof of publication. For a stable product Release, replace the repository and
 tag with its actual resolved values. Choose the datastore's vars asset:
 
 ```bash
-AIV_RELEASE_TAG=${AIV_RELEASE_TAG:-delivery-v0.0.1-daily.20261029}
+AIV_RELEASE_TAG=${AIV_RELEASE_TAG:-delivery-v0.1.0-daily.20261101}
 AIV_DELIVERY_REPOSITORY=ob-labs/ai-vision-skills
 AIV_IMAGE_VARS=release-images.vars.yaml  # CE; use release-seekdb.vars.yaml for Docker seekdb
 case "$(uname -s)" in Linux) ;; *) echo 'This delivery selects Linux hosts only.' >&2; exit 1 ;; esac
@@ -287,7 +288,7 @@ fi
 
 Continue only after this succeeds. Read `release-manifest.json`: its
 `product_version` must match the Daily tag after removing `delivery-v`
-(`0.0.1-daily.20261029` for the selected default), or the stable tag after removing
+(`0.1.0-daily.20261101` for the selected default), or the stable tag after removing
 its leading `v`. Its
 channel must be `stable` for Release or `daily` for Daily, and the vars image
 digests must match its `images` entries. The vars must also contain
