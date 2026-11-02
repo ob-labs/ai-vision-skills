@@ -112,9 +112,9 @@ For published builds, choose Release or Daily using the [shared channel flow](..
 and download the [matching CLI and verified manifest](prerequisites.md#resolve-the-version-and-download-matching-assets).
 Restricted Daily uses an exact published `delivery-v<product-version>`
 prerelease in `ob-labs/ai-vision-skills`. The selected default
-`delivery-v0.0.1-daily.20261029` selects Linux x64/ARM64 CLI archives and both
+`delivery-v0.1.0-daily.20261101` selects Linux x64/ARM64 CLI archives and both
 Linux service architectures, and is available only after publication and asset
-verification. Older trial Releases are retired after the replacement is verified.
+verification. Earlier accepted Releases remain retained unless retirement is separately authorized.
 Historical `.20261028.2` reader compatibility is x64-only. Confirm the CLI
 host and cluster node architectures independently. A Docker smoke or an OCI
 multi-platform index does not establish Kubernetes or ARM cluster acceptance;
