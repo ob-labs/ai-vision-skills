@@ -56,23 +56,26 @@ shared canonical copy, or independent copies. `--all` selects all skills and
 all agents without prompting. See the upstream
 [installation methods](https://github.com/vercel-labs/skills#installation-methods).
 
-During the restricted trial, only authorized repository users can install.
-The command clones this Skills repository using the caller's own authorized
-GitHub/Git session; do not distribute shared tokens. An authorized operator may
-also make the complete manual copy below. Restricted Daily CLI and deployment
-metadata use an exact published `delivery-v<product-version>` prerelease in this
-repository. The selected default, `delivery-v0.1.0-daily.20261101`, selects Linux
-x64 and ARM64 CLI archives and both Linux service architectures. It is available
-only after the exact prerelease is published and all seven assets are verified;
-catalog installation does not establish publication. Earlier accepted Releases remain retained unless retirement is separately authorized. Historical `.20261028.2` reader
-compatibility is x64-only and does not guarantee a download. A bundled install recipe
-automatically chooses the CLI archive with `uname`; Docker chooses the image child
-for the deployment daemon from the pinned multi-platform index. Missing assets or
-an unsupported host platform require a compatible published delivery,
-not a product checkout. Stable product Releases retain their original channel.
-Installing a Skill, downloading a CLI Release, pulling platform images, and
-signing in to AI Vision are separate operations; authenticate only the one that
-actually requires access.
+This repository is currently private, so catalog installation requires the
+caller's authorized GitHub/Git session. Do not distribute shared tokens. An
+operator may also make the complete manual copy below.
+
+Product CLI and deployment metadata now resolve from `ob-labs/ai-vision-ob`.
+Export an exact **published** `AIV_TAG`: `v<version>` for stable Release or
+`v<version>-daily.<YYYYMMDD>[.<N>]` for Daily/preview. No future `0.1.0` date is
+assumed available. The independently bundled recipes select the host archive
+with `uname`, validate Release/manifest identity and checksums, and preserve an
+installed binary on failure. They require Bash, `curl`, `jq`, `tar` and a SHA256
+tool. Public downloads are anonymous; authenticated `gh` is fallback for the
+currently private product repository. The standard source-compatible CLI is the
+default; consume the actual Release's manifest and vars instead of assuming the
+historical native profile.
+
+Historical restricted downloads require explicitly selecting this Skills
+repository and an approved retained `delivery-v` tag. Their platform and asset
+guards remain; old reader compatibility does not promise downloads. Installing
+a Skill, downloading a Release, pulling images and signing into AI Vision are
+separate operations. Authenticate only the operation requiring access.
 
 ### Manual copy
 

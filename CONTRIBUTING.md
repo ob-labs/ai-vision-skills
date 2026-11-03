@@ -8,7 +8,9 @@ Keep `skills/<name>/SKILL.md` names stable and provide concise `name` and `descr
 
 Preserve supported deployment lifecycle, identity, authentication, telemetry, and compatibility constraints. A Skill edit must not invent missing CLI capabilities, Release assets, runtime evidence, or extra user authorizations. Keep credentials in private local configuration and out of commits, screenshots, fixtures, and command output.
 
-When adding a Skill, update both catalog indexes. Preserve relevant tests and bundled dependencies. Product versioning is independent of catalog tags; reserve `skills-v<catalog-version>` for catalog-only versions. Restricted Daily delivery tags use immutable `delivery-v<product-version>` prereleases and explicit matching assets. The `0.1.0-daily.20261101` trial target has a seven-asset allowlist in [distribution ownership](docs/distribution.md). Historical tests retain the older AMD64-only six-asset format without promising old downloads. New architecture support uses a new accepted version without moving an earlier immutable tag; authorized retirement preserves private evidence and is not an automatic publication step.
+When adding a Skill, update both catalog indexes. Preserve relevant tests and bundled dependencies. Product versioning is independent of catalog tags; reserve `skills-v<catalog-version>` for catalog-only versions. Product stable/Daily downloads use exact published `v<product-version>` tags in `ob-labs/ai-vision-ob`, with source-compatible CLI behavior as the default. Resolve once and verify the actual manifest, checksums and vars. Public downloads must work without GitHub authentication; authenticated fallback supports the currently private product repository.
+
+Historical restricted Daily readers remain explicit: the Skills repository and one of its three approved immutable `delivery-v` tags are required together. Retain their original six/seven-asset and platform guards without promising availability. This cutover does not publish, delete or rewrite historical releases, image pins, checksums, or provenance. See [distribution ownership](docs/distribution.md).
 
 ## Checks
 

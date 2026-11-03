@@ -36,36 +36,32 @@ If the user delegates the choice, use Release. For an existing deployment,
 inspect its saved configuration and actual version first; retries keep that
 combination, and upgrades use the channel or version the user requested.
 
-Resolve either choice to a **published versioned GitHub Release** before installing:
-Release uses the product repository's latest stable Release. During the restricted
-trial, Daily uses a fixed `delivery-v<product-version>` prerelease in
-`ob-labs/ai-vision-skills`, with selected default
-`delivery-v0.1.0-daily.20261101`. This target is available only after the exact
-prerelease is published and all seven required assets are verified. Its selected
-platforms are Linux x64 and ARM64 CLI archives plus `linux/amd64` and
-`linux/arm64` service indices. The bundled [CLI recipe](reference/install-cli.md)
-selects the local CLI archive automatically; Docker selects each native service
-child for its own host from the same pinned index. Earlier accepted Releases remain retained unless retirement is separately
-authorized; do not silently use another version as fallback.
-Historical `.20261028.2` reader compatibility is x64-only and is not an
-availability promise. A missing selected Release stops the install.
-Daily versions use a fixed snapshot date: `0.0.1-daily.20261028` for the first
-version on that date and `.2`, `.3`, and later for
-additional accepted versions on that date. Retries or work crossing midnight
-keep the snapshot date and candidate version; workflow run numbers and attempts
-remain diagnostic build metadata. Do not follow the old product `daily` pointer
-or use `releases/latest` for this prerelease. `aiv --version` remains the product
-version without `delivery-v`. If the requested channel or platform has no
-published compatible build, report that fact and stop
-instead of silently substituting `dev` or claiming a build is from today.
-Follow [version resolution and downloads](reference/prerequisites.md#resolve-the-version-and-download-matching-assets)
-for matching CLI, checksums, image manifest and deployment variables.
+Resolve either choice to a **published immutable GitHub Release** in
+`ob-labs/ai-vision-ob`: stable uses `v<version>`, Daily/preview uses
+`v<version>-daily.<YYYYMMDD>[.<N>]`. No future `0.1.0` Daily tag/date is assumed
+available. Read the actual metadata and keep one resolved tag for CLI, manifest,
+vars and upgrades. The [CLI recipe](reference/install-cli.md) requires that
+explicit tag; it does not download through mutable `daily`/`latest` selectors.
+Public downloads use anonymous access; an authorized `gh` account is fallback
+while the product repository remains private. A missing version, unsupported
+host archive, draft or failed verification stops without replacing the CLI or
+silently selecting another build.
 
-The restricted native CLI profile, including the selected `0.1.0-daily.20261101` target,
-excludes source-mode Python resources before linking. The earlier `.20261028` CLI does not meet that boundary. Use matching
-native image vars; explicit source modes and source installers are rejected.
-CLI-managed `--target compose` remains available. Standalone `--compose-file`
-is unsupported by this private native build; ordinary source builds retain it.
+Use the standard source-compatible CLI by default. Consume the selected
+Release's actual manifest and vars; do not force a historical native profile,
+image namespace or service architecture from its channel. Native variants are
+optional only when explicitly selected and actually published. Check the CLI
+machine separately from the deployment daemon and Agent machine. Follow
+[version resolution and downloads](reference/prerequisites.md#resolve-the-version-and-download-matching-assets)
+for exact checksums, images, deployment variables and platform evidence.
+
+Historical restricted deliveries require an explicit Skills repository and an
+approved retained `delivery-v` tag. Their original private authentication,
+platform and asset guards remain, including x64-only `.20261028.2` compatibility
+and rejection of the withdrawn source-bearing `.20261028` CLI. Historical reader
+support does not promise downloads; no historical tag, asset or provenance is
+rewritten by this cutover. Native-only CLI limitations apply only to a selected
+native profile; standard source-compatible builds retain their documented modes.
 
 ## Decide the environment first
 
@@ -213,11 +209,12 @@ and ports. Use the CE or seekdb asset for that selected backend; see
 [matching assets](reference/prerequisites.md#resolve-the-version-and-download-matching-assets).
 The file updates all five services together, including SigNoz, and includes
 `AIVISION_RELEASE_MANIFEST_BASE64` for the installed product identity. Users select
-one product release; do not ask them to choose or update component tags. Restricted
-Daily service images use `ghcr.io/ob-labs/ai-vision-skills/`; take all five exact
-digest references from the manifest and verified vars. Preserve
-`NATIVE_PYTHON_RUNTIME: "true"`; native deployment and Agent installation need
-no user-installed Python. Never derive image tags from the delivery tag. For
+one product release; do not ask them to choose or update component tags. Take
+all five exact digest references and runtime settings from the manifest and
+verified vars. The product publishes four application images and pins upstream
+SigNoz by digest. Preserve a native runtime setting only when that selected
+Release supplies it; standard source-compatible CLI behavior is the default.
+Never derive image tags or namespaces from the Release tag. For
 explicitly requested local images, keep their
 recorded references and use `IMAGE_PULL=missing` instead of `always` below when
 those images exist only on this host.

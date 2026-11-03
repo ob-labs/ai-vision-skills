@@ -1,6 +1,6 @@
 # AI Vision Skills
 
-The maintained AI Vision Skill catalog for deploying the platform, trying an Agent, inspecting traces, and querying usage. This repository is the canonical source for these Skills and the restricted-trial Daily delivery channel. Product source, CLI builds, canonical deployment assets, and telemetry plugin implementation remain in the product repository.
+The maintained AI Vision Skill catalog for deploying the platform, trying an Agent, inspecting traces, and querying usage. This repository is the canonical source for these Skills. Product Release and Daily downloads are selected from `ob-labs/ai-vision-ob`; historical private deliveries remain retained here. Product source, CLI builds, canonical deployment assets, and telemetry plugin implementation remain in the product repository.
 
 ## Install
 
@@ -32,21 +32,45 @@ Copy the complete Skill directory for manual installation: `SKILL.md`, reference
 
 If you previously installed from `ob-labs/ai-vision-ob`, install again from `ob-labs/ai-vision-skills` for the same scope and selected agent. Check the installation summary and local copies before removing the old source. `skills update` follows the recorded origin and does not switch repositories automatically. Do not remove unrelated Skills or overwrite local customizations without reviewing them.
 
-## Distribution phases
+## Product downloads and historical delivery
 
-For this restricted trial, use `delivery-v0.1.0-daily.20261101` in this private repository. It selects Linux x64 or ARM64 CLI archives and matching service images. **The target is available only after its exact prerelease is published and all seven assets are verified.** An absent or draft Release stops installation without replacing an installed binary. Earlier accepted Releases remain retained unless retirement is separately authorized; a historical tag or reader does not guarantee a download.
+Skill installation continues to use `ob-labs/ai-vision-skills`; product/CLI
+source, builds, deployment assets and binary Releases belong to
+`ob-labs/ai-vision-ob`. Each independently installed Skill includes the same
+self-contained CLI recipe. Select a published immutable product tag explicitly:
+`v<version>` for Release or `v<version>-daily.<YYYYMMDD>[.<N>]` for Daily/preview.
+There is no assumed published `0.1.0` Daily date. A missing version, draft,
+checksum mismatch or unavailable host archive stops before replacing the CLI.
 
-The new target allows exactly seven Release assets: `aiv-linux-x64.tar.gz`, `aiv-linux-arm64.tar.gz`, `install-aiv.sh`, `release-manifest.json`, `release-images.vars.yaml`, `release-seekdb.vars.yaml`, and `SHA256SUMS`. Each installed Skill includes its own CLI download instructions: the same command detects the CLI machine with `uname`, downloads its checksummed archive, and preserves an installed binary on failure. Docker selects the native service child from the pinned multi-platform image index on the deployment daemon's platform. The CLI machine, Docker host and native Agent machine can be different machines. Private downloads use the operator's authenticated `gh` account; `aiv --version` remains the product version, without `delivery-v`.
+The standard source-compatible CLI is the default profile. Read the selected
+Release's actual manifest and matching vars; do not apply a restricted native
+variant's settings to it. The recipes use anonymous `curl` downloads for public
+Releases, with `jq` for JSON validation and authenticated `gh` fallback while
+the product repository is private. Git access, Release access, image pulls,
+platform login, SpaceKeys and model credentials are separate operations.
 
-The native CLI excludes legacy first-party Python resources at link time. The earlier `delivery-v0.0.1-daily.20261028` Release was withdrawn because its CLI embeds legacy Python deployment helpers; it is rejected as a strict native delivery. Source, component build identities and workflow provenance remain product-owned, including any genuinely reused components from an earlier build.
+The selected manifest pins all five service images and fixed upstream database
+dependencies. The product publishes its four application images; SigNoz remains
+owned by `ob-labs/signoz` and is consumed by digest. Do not infer namespaces or
+platform support from a tag or CLI architecture. Merge the verified CE or seekdb
+vars into existing private configuration, retaining credentials, datastore,
+history and data identity. Saved retired database-mirror references require the
+selected upstream references. Runtime and platform qualification must come from
+the actual Release's evidence.
 
-The five private application packages use `ghcr.io/ob-labs/ai-vision-skills/{aivision-be,aivision-fe,agentlens,antcollector-gw,signoz-ob}`. Each accepted release uses its immutable full product-version tag, such as `:0.1.0-daily.20261101`; `:daily` follows the latest accepted Daily. Both platforms share the same version/index reference. Short `:daily.<date>` tags are not published. Deploy with the exact manifest digests and separately verified image access. OceanBase CE and seekdb use fixed official upstream digest references from the selected manifest and vars; confirm those upstream manifests include the actual Docker host platform. This namespace has no database packages, and databases are not republished with each Daily.
+Historical `delivery-v` Releases and private `ai-vision-skills` packages are
+explicit compatibility paths, with their original tag/platform/asset guards.
+They are not default downloads and are not rewritten or deleted by this
+cutover. The withdrawn source-bearing `.20261028` delivery remains rejected;
+historical reader support does not establish current availability. See
+[distribution ownership](docs/distribution.md) for frozen provenance, retention,
+and the remaining publication/visibility steps. Repository visibility remains
+unchanged by these instructions.
 
-Use the selected Release's matching vars when deploying or upgrading. Merge them into an existing deployment's private configuration while preserving credentials, datastore choice and retained data. Saved private database-mirror references must be replaced with the matching upstream references. See [distribution ownership](docs/distribution.md) for delivery and historical-retirement details. Requested x86 and ARM scan bundles contain the five service images only; database dependencies remain separate, and packaging is not a vulnerability-scan result.
-
-For native Agent onboarding, verify that the selected backend serves the Agent's own Linux x64 or ARM64 installer target. Those bundles require glibc 2.35 or newer; Debian Bookworm/glibc 2.36 is the recorded client baseline. Check `getconf GNU_LIBC_VERSION` on the Agent machine. This client requirement is separate from the static Go CLI and Docker services, whose runtime libraries live inside their images. A CLI or image platform declaration does not establish client, Kubernetes or runtime qualification.
-
-After the product becomes open source, product binaries return to the product Release channel and this repository continues to maintain Skills only. Installation commands and Skill names stay the same. Review restricted historical Release assets and temporary credentials before changing repository visibility. See [distribution ownership](docs/distribution.md).
+For native Agent onboarding, inspect the selected backend's own installer and
+ABI requirements on the Agent machine. Historical native bundles required
+glibc 2.35 or newer; that historical baseline does not qualify another Release,
+a different Agent machine, Kubernetes, or a model integration.
 
 ## Development
 

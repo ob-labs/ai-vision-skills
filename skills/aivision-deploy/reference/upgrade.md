@@ -4,7 +4,7 @@ Use the existing CLI lifecycle; do not introduce another upgrade controller.
 This reference covers default Docker and optional Compose. Kubernetes keeps its
 [target-specific workflow](kubernetes.md).
 
-The restricted native CLI profile, including `0.1.0-daily.20261101`, supports default Docker and
+An explicitly selected historical restricted native CLI profile supports default Docker and
 CLI-managed Compose. It rejects existing-file / standalone `--compose-file`
 deployments. If the existing installation uses that mode, stop before replacing
 the CLI, changing configuration or mutating services. Keep its compatible CLI
@@ -50,16 +50,16 @@ An inspection-only request does not authorize upgrade or container removal.
    before mutation. Keep backup credentials and private state out of chat/logs.
 3. [Resolve and verify](prerequisites.md#resolve-the-version-and-download-matching-assets)
    one versioned Release and its matching CLI, manifest and backend-specific
-   vars. Restricted Daily uses the exact published
-   `delivery-v<product-version>` prerelease in `ob-labs/ai-vision-skills`; do not
-   follow the old product `daily` pointer. The current target is
-   `delivery-v0.1.0-daily.20261101`, selecting Linux x64/ARM64 and both service
-   architectures only after its exact prerelease and assets are verified. Earlier
-   accepted Releases remain retained unless retirement is separately authorized; preserve an
-   existing restore set locally rather than relying on an old download. Confirm the
-   Release and platform exist before changing an installed CLI. A retry keeps
-   that resolved version. CLI installation alone does
-   not upgrade running services. Preserve the old restore set before installing
+   vars. Use the product repository's exact published `v<version>` stable or
+   `v<version>-daily.<YYYYMMDD>[.<N>]` preview Release. No future `0.1.0` tag/date
+   is assumed available; the standard source-compatible CLI is the default.
+   Keep the resolved immutable tag for retries, CLI, manifest and both vars;
+   do not follow mutable `daily`/`latest` download selectors or use another
+   version on failure. Only an explicit historical request selects the Skills
+   repository's guarded `delivery-v` path. Preserve the existing restore set
+   locally instead of relying on an old download. Confirm the actual Release
+   and platform before changing the CLI. CLI installation alone does not
+   upgrade running services. Preserve the old restore set before installing
    the target CLI or changing deployment configuration.
 4. Merge the five released application digests and exact embedded release
    manifest into the original configuration. Treat legacy/canonical image aliases
@@ -69,14 +69,15 @@ An inspection-only request does not authorize upgrade or container removal.
    pins forward merely because they were in the original command. Preserve
    unrelated overrides and selectors. Privately resolve the effective five image
    settings and embedded manifest before `cast`; all must match the selected
-   release. For restricted Daily, use the manifest's exact digest references
-   under `ghcr.io/ob-labs/ai-vision-skills/` and retain
-   `NATIVE_PYTHON_RUNTIME: "true"` from its native vars. Never guess tags or
-   print resolved secrets to do this.
+   release. Use the exact image digests and runtime/profile settings supplied by
+   that manifest and its verified vars. Product publication owns four images
+   and consumes upstream SigNoz by digest. Keep native settings only for the
+   selected native profile; do not force them into the standard source-compatible
+   Release. Never guess tags/namespaces or print resolved secrets to do this.
    Retain passwords, tokens, datastore/backend, managed/external choice, ports,
    addresses, namespace/state and fixed history start. Do not replace the file
    with the downloaded vars or pass two `--vars-file` flags. External databases
-   retain their existing connection/image policy. With ordinary source CLI
+   retain their existing connection/image policy. With standard source-compatible CLI
    builds only, existing parameterized Compose
    files keep their original env and matching maintained assets; do not rewrite
    generated CLI bundles or infer a different lifecycle from registry tags.

@@ -340,8 +340,8 @@ docker compose --project-name "$AIV_COMPOSE_PROJECT" --file "$AIV_COMPOSE_BUNDLE
 
 Config --quiet avoids printing resolved secrets.
 
-The following standalone-file commands require an ordinary source CLI build.
-The restricted native CLI profile, including `0.1.0-daily.20261101`, rejects `--compose-file` before
+The following standalone-file commands require an standard source-compatible CLI build.
+An explicitly selected historical restricted native CLI profile rejects `--compose-file` before
 Docker or deployment-state mutation. If that is the existing deployment mode,
 stop before replacing its CLI or changing configuration or services; this
 delivery provides no automatic conversion. CLI-managed `--target compose`
@@ -399,17 +399,18 @@ from the earlier source-candidate matrix; static checks and same-image recast
 are not cross-release upgrades. Follow the shared authenticated verification
 for new and retained traces, organization identity, canaries, mounts and image IDs.
 
-The restricted native CLI supports CLI-managed `--target compose` with
+An explicitly selected historical restricted native CLI supports CLI-managed `--target compose` with
 matching native variables. It rejects standalone `--compose-file` before Docker
 or deployment-state mutation. Generic standalone Compose instructions apply to
-ordinary source builds, not this private native delivery.
+standard source-compatible builds, not this private native delivery.
 
 ## Agent machine onboarding
 
 Check the [native Agent client runtime](prerequisites.md#native-agent-client-runtime)
-on the Agent machine first. Verify a served Linux x64 or ARM64 installer target
-and require glibc 2.35 or newer; Debian Bookworm/glibc 2.36 is the recorded
-client baseline. The Docker host
+on the Agent machine first. Verify the selected backend's served installer
+target and actual ABI requirements. Historical restricted bundles required
+glibc 2.35 or newer, with Debian Bookworm/glibc 2.36 as the recorded client
+baseline; that qualification does not establish another Release's support. The Docker host
 and Agent client can be different machines with different runtime libraries.
 
 Use the machine and user account that run the target coding Agent:
