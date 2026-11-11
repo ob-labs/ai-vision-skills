@@ -99,7 +99,8 @@ try {
     $target = Join-Path $destination 'aiv.exe'
     $staged = Join-Path $destination ('.aiv-' + [Guid]::NewGuid().ToString('N') + '.exe')
     [IO.File]::Copy($binary, $staged)
-    if ([IO.File]::Exists($target)) { [IO.File]::Replace($staged, $target, $null) }
+    # Preserve a null backup path across PowerShell's string parameter conversion.
+    if ([IO.File]::Exists($target)) { [IO.File]::Replace($staged, $target, [NullString]::Value) }
     else { [IO.File]::Move($staged, $target) }
     Write-Output "Installed $target"
     Write-Output $actualVersion
