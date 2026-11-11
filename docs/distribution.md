@@ -2,9 +2,9 @@
 
 ## Current state
 
-This private repository owns the four maintained Skills and the restricted-trial Daily delivery channel. A delivery is available only after its exact `delivery-v<product-version>` GitHub prerelease is published with the required assets. Instructions, source changes, or a successful registry probe do not establish product publication or runtime acceptance.
+This private repository owns the four maintained Skills and the restricted-trial Daily delivery channel. A base delivery uses a published `delivery-v<product-version>` GitHub prerelease. Platform companions identify the exact base delivery they extend. Published assets and manifest platform fields determine what is available.
 
-The selected trial target is `delivery-v0.1.0-daily.20261101`: Linux x64 and ARM64 CLI archives, and service indices declaring `linux/amd64` plus `linux/arm64`. It is available only after its exact prerelease is published and its seven assets are verified. A missing or draft Release stops installation; a catalog change is not a publication receipt.
+Discover published candidates through authenticated GitHub Release metadata. Select by product version, requested client platform and available artifacts. The current trial covers Linux x64 services and CLI, Apple Silicon macOS clients, and Windows x64 client previews. For deployment, validate the Linux x64 Docker host in the base manifest and use the database vars from the selected release. Show the resolved version before upgrading and keep its exact tag through the operation.
 
 Ordinary later publication preserves earlier accepted Releases, assets and tags. Retirement requires separate maintainer authorization; never silently substitute an older download for the selected version. Preserve private historical artifacts, checksums, catalog/build identities and qualification records for audit. Historical readers and tests may still recognize the six-asset, x64-only `.20261028.2` format; that compatibility does not promise a GitHub Release or downloadable assets. Published assets remain immutable while retained; retirement does not authorize moving an old tag or changing its bytes.
 
@@ -34,36 +34,34 @@ An installed Skill must contain its execution prerequisites. Product source link
 For each restricted Daily delivery:
 
 1. Freeze one product version, qualified CLI archive, image digests, and deployment variables from the qualified product build. Product/CLI source and canonical deployment assets stay in the product repository; do not copy application source here.
-2. Use an immutable `delivery-v<product-version>` prerelease tag. The `0.1.0-daily.20261101` target allows exactly the seven assets below. The older `.20261028.2` six-asset contract is retained for historical-reader tests, not as a supported download target. No source bundle, `release-plan.json`, `plugin-dist.tar.gz`, build plan, log, or internal report belongs in that asset set.
+2. Use an immutable `delivery-v<product-version>` prerelease tag for the base. Publish checksums, the manifest, matching database vars and the archives for the selected platforms. A companion must name its exact published base and bind its own assets and backend digest. Keep source bundles, build plans, logs and internal reports in the product team's private build storage.
 3. Render `ob-labs/ai-vision-skills` into `install-aiv.sh` before generating its checksum. Private asset downloads, including installer downloads, use the operator's authenticated GitHub CLI. An anonymous curl URL does not acquire private access by changing its repository.
-4. Retain actual product version, source SHA, component build identities, source URLs, and build/workflow provenance. `aiv --version` is `0.1.0-daily.20261101` for the selected default, never `delivery-v0.1.0-daily.20261101`. Distribution here does not imply that the product was built here.
-5. Publish only the five application packages under `ghcr.io/ob-labs/ai-vision-skills/`: `aivision-be`, `aivision-fe`, `agentlens`, `antcollector-gw`, and `signoz-ob`. Use each full product-version tag, such as `:0.1.0-daily.20261101`, and advance `:daily` only to the latest accepted Daily. Do not publish short `:daily.<date>` tags. Use fixed official upstream digest references for OceanBase CE and seekdb from the current manifest and matching vars; do not create database packages or republish databases with each Daily. Deploy using the manifest's exact digests; never derive image references from the Release tag or deploy using mutable `:daily`. Native deployment vars must include `NATIVE_PYTHON_RUNTIME: "true"`.
+4. Retain actual product version, source SHA, component build identities, source URLs, and build or workflow provenance. Check that `aiv --version` reports the product version recorded by the selected Release.
+5. Publish the five application packages under `ghcr.io/ob-labs/ai-vision-skills/`: `aivision-be`, `aivision-fe`, `agentlens`, `antcollector-gw`, and `signoz-ob`. Use each full product-version tag and advance `:daily` to the latest accepted base Daily. Platform-specific preview backends use separate tags. Use fixed official upstream digest references for OceanBase CE and seekdb. Deploy using the exact manifest digests. Native deployment vars must include `NATIVE_PYTHON_RUNTIME: "true"`.
 6. Complete the selected delivery's declared validation matrix before promotion. Keep service, CLI, client and database execution platforms explicit. Read the selected Release notes for its actual native, emulated or mixed-platform coverage. An x86 application case using native ARM64 CE is a mixed-platform case, not a full AMD64 database-startup pass; do not carry a historical delivery's limits or results forward as current qualification. Do not claim pending cases passed; publish the actual completed scope in the Release notes. For the requested offline/manual security scanning bundles, export the five service images per architecture and exclude database images; retain exact configs, layer checksums, image digests and platforms. Database dependencies stay upstream and separate. Add no scanner CI, mandatory reports, or extra repository/package access grants.
-7. Verify the published assets and automatic recipient CLI selection on both selected Linux architectures. Complete actual telemetry ingestion/readback for the declared application/datastore matrix before claiming that scope is ready. State any mixed database platform explicitly; keep Docker, Kubernetes and real-model evidence distinct.
+7. Verify the published assets and automatic CLI selection for the published targets. Complete actual telemetry ingestion and readback before claiming that scope is ready. State the application and database platforms, deployment mode and any real-model validation explicitly.
 
-| Restricted dual-platform delivery asset | Purpose |
+| Release asset | Purpose |
 | --- | --- |
-| `aiv-linux-x64.tar.gz` | Linux x64 CLI, with the actual product version |
-| `aiv-linux-arm64.tar.gz` | Linux ARM64 CLI, with the same product version |
+| `aiv-linux-<arch>.tar.gz` | CLI archive for a selected Linux architecture |
+| `aiv-darwin-<arch>.tar.gz` | CLI archive for a selected Mac architecture |
+| `aiv-windows-x64.zip` | Windows x64 CLI when the base delivery includes the client preview |
 | `install-aiv.sh` | Installer configured for authenticated private delivery |
 | `release-manifest.json` | Product/build provenance, exact image references, and platform evidence |
 | `release-images.vars.yaml` | Matching OceanBase CE deployment variables |
 | `release-seekdb.vars.yaml` | Matching seekdb deployment variables |
-| `SHA256SUMS` | One checksum for each of the other six assets |
+| Platform companion or preview manifest and vars | Base relationship and the backend configuration for the selected client preview |
+| `SHA256SUMS` | Checksums for the Release's published install artifacts and configuration |
 
-The same installed Skill command selects `aiv-linux-x64.tar.gz` for `x86_64`/`amd64`
-and `aiv-linux-arm64.tar.gz` for `aarch64`/`arm64`. It does not infer service
-platforms from the CLI machine. The deployment daemon resolves the manifest's
-multi-platform image index to its own native child. Confirm each service index
-and the separately pinned upstream database index contain the actual daemon
-platform; a missing native child is a publication gap, not an implicit emulation
-or source-build fallback. A deliberately validated mixed-platform trial records
-the database host separately. The historical `.20261028.2` format is Linux x64
-only and does not establish an available download.
+The installed Skill selects the archive for the current trial platform. Older
+assets can remain available for already pinned installations. Validate the
+deployment daemon's platform independently and confirm that the service and
+upstream database references include it. A deliberately validated mixed-platform
+trial records the database host separately.
 
 Existing deployments or saved vars that still reference the retired private `oceanbase-ce` or `seekdb` packages must use the current matching `release-images.vars.yaml` or `release-seekdb.vars.yaml` before deployment. Retain the deployment's existing credentials, datastore selection and data identity when updating those references.
 
-Resolve restricted Daily downloads against the fixed tag in this repository and confirm that it is a published prerelease with the required assets. Do not follow the old product `daily` pointer, use `releases/latest` for a prerelease, or substitute mutable Dev images when the requested version is missing. A missing compatible Release or platform stops installation and preserves the installed binary. Stable product Releases may retain their original channel; their existence does not establish today's restricted Daily.
+List the published prereleases in this repository, select a compatible version and then use its exact tag for the download. Filter on the client's package and any required server platform before comparing product versions. Use the companion manifest to check the base relationship when macOS assets ship separately. Windows client preview manifests can be included in the base Release. If discovery finds only an older compatible platform release, state the selected version and the platform gap before proceeding. Preserve an existing CLI on a failed download or compatibility check. Stable product Releases use their product channel.
 
 ## Authentication boundaries
 

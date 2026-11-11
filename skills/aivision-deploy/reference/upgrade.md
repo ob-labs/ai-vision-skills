@@ -4,7 +4,7 @@ Use the existing CLI lifecycle; do not introduce another upgrade controller.
 This reference covers default Docker and optional Compose. Kubernetes keeps its
 [target-specific workflow](kubernetes.md).
 
-The restricted native CLI profile, including `0.1.0-daily.20261101`, supports default Docker and
+The restricted native CLI profile supports default Docker and
 CLI-managed Compose. It rejects existing-file / standalone `--compose-file`
 deployments. If the existing installation uses that mode, stop before replacing
 the CLI, changing configuration or mutating services. Keep its compatible CLI
@@ -49,37 +49,25 @@ An inspection-only request does not authorize upgrade or container removal.
    If the backup procedure or destination is unknown, resolve that specific gap
    before mutation. Keep backup credentials and private state out of chat/logs.
 3. [Resolve and verify](prerequisites.md#resolve-the-version-and-download-matching-assets)
-   one versioned Release and its matching CLI, manifest and backend-specific
-   vars. Restricted Daily uses the exact published
-   `delivery-v<product-version>` prerelease in `ob-labs/ai-vision-skills`; do not
-   follow the old product `daily` pointer. The current target is
-   `delivery-v0.1.0-daily.20261101`, selecting Linux x64/ARM64 and both service
-   architectures only after its exact prerelease and assets are verified. Earlier
-   accepted Releases remain retained unless retirement is separately authorized; preserve an
-   existing restore set locally rather than relying on an old download. Confirm the
-   Release and platform exist before changing an installed CLI. A retry keeps
-   that resolved version. CLI installation alone does
-   not upgrade running services. Preserve the old restore set before installing
-   the target CLI or changing deployment configuration.
-4. Merge the five released application digests and exact embedded release
-   manifest into the original configuration. Treat legacy/canonical image aliases
-   as one setting: an old `DATA_BACKEND_IMAGE` can override a new `SIGNOZ_IMAGE`.
-   Update or remove stale image aliases in saved/merged variables and reconcile
-   image overrides from `AIV_VAR_*` and original `--var` flags; do not carry old
-   pins forward merely because they were in the original command. Preserve
-   unrelated overrides and selectors. Privately resolve the effective five image
-   settings and embedded manifest before `cast`; all must match the selected
-   release. For restricted Daily, use the manifest's exact digest references
-   under `ghcr.io/ob-labs/ai-vision-skills/` and retain
-   `NATIVE_PYTHON_RUNTIME: "true"` from its native vars. Never guess tags or
-   print resolved secrets to do this.
-   Retain passwords, tokens, datastore/backend, managed/external choice, ports,
-   addresses, namespace/state and fixed history start. Do not replace the file
-   with the downloaded vars or pass two `--vars-file` flags. External databases
-   retain their existing connection/image policy. With ordinary source CLI
-   builds only, existing parameterized Compose
-   files keep their original env and matching maintained assets; do not rewrite
-   generated CLI bundles or infer a different lifecycle from registry tags.
+   the selected base Release, CLI, manifest and datastore vars. For unpinned
+   restricted Daily on a Linux x86 server, discover the newest published base
+   compatible with the required Agent clients. If an existing deployment falls
+   outside that platform scope, preserve it and stop the private upgrade path.
+   Reuse the resolved version for retries.
+   Preserve the old restore set before installing the target CLI or changing
+   deployment configuration. Keep historical release files you need to recover.
+4. Merge the five released service digests and embedded release manifest into
+   the original configuration. Reconcile legacy/canonical image aliases,
+   `AIV_VAR_*` and existing `--var` image overrides. Confirm the effective
+   image pins and manifest before `cast`. If the request includes preview
+   clients, use the [verified same-base backend configuration](prerequisites.md#select-the-agent-client-backend-configuration).
+   For restricted Daily, keep the immutable `ghcr.io/ob-labs/ai-vision-skills/`
+   image references and enabled native runtime. Preserve passwords, tokens,
+   datastore/backend, managed/external choice, ports, addresses, namespace,
+   state, and fixed history start. Edit the original private vars file and pass
+   one `--vars-file`. External databases keep their existing connection/image
+   policy. Existing standalone Compose on a compatible ordinary source CLI
+   keeps its original file, env, and matching maintained assets.
 5. Run the matching CLI's ordinary `cast` with the original selectors and one
    merged private configuration. For example, an existing default Docker stack:
 

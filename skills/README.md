@@ -59,17 +59,15 @@ all agents without prompting. See the upstream
 During the restricted trial, only authorized repository users can install.
 The command clones this Skills repository using the caller's own authorized
 GitHub/Git session; do not distribute shared tokens. An authorized operator may
-also make the complete manual copy below. Restricted Daily CLI and deployment
-metadata use an exact published `delivery-v<product-version>` prerelease in this
-repository. The selected default, `delivery-v0.1.0-daily.20261101`, selects Linux
-x64 and ARM64 CLI archives and both Linux service architectures. It is available
-only after the exact prerelease is published and all seven assets are verified;
-catalog installation does not establish publication. Earlier accepted Releases remain retained unless retirement is separately authorized. Historical `.20261028.2` reader
-compatibility is x64-only and does not guarantee a download. A bundled install recipe
-automatically chooses the CLI archive with `uname`; Docker chooses the image child
-for the deployment daemon from the pinned multi-platform index. Missing assets or
-an unsupported host platform require a compatible published delivery,
-not a product checkout. Stable product Releases retain their original channel.
+also make the complete manual copy below. For the CLI, follow the installation
+reference in the installed Skill. It discovers a published compatible Release,
+identifies the exact tag for the operation, and checks the download before
+replacing an installed binary. The current trial offers Linux x64 and Apple
+Silicon clients, and a Windows x64 client preview. Mac packages may be in a
+companion to a base Daily. The Windows x64 preview uses a ZIP and its own verified
+manifest. For deployment, check the Docker host and
+Agent platforms separately and use the selected release's digest-pinned vars.
+Stable product Releases retain their original channel.
 Installing a Skill, downloading a CLI Release, pulling platform images, and
 signing in to AI Vision are separate operations; authenticate only the one that
 actually requires access.
