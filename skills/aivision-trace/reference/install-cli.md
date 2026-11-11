@@ -1,155 +1,95 @@
 # Installing the `aiv` CLI
 
-First expose the default install directory in **this terminal**, then check the
-binary actually selected. This also reuses an installed CLI while offline:
+Reuse an installed compatible CLI, including when offline. On Linux or macOS,
+expose the permanent install directory in this terminal and check the executable
+and relevant command. Use the confirmed directory if the CLI is installed elsewhere.
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
 command -v aiv
 aiv --version
+aiv query trace list --help
 ```
 
-If `aiv` is installed elsewhere, use that confirmed directory in the export.
-A version alone does not prove support for this skill: inspect the relevant
-`aiv query … --help` output. An unknown command/flag needs a compatible release,
-not a new profile or a platform redeployment. Run the download block only when
-installation or an upgrade is needed.
+On Windows, use `Get-Command aiv` and run the same version and help commands in
+PowerShell. For a capability missing from the installed CLI, select a compatible
+release before changing the platform deployment or user profile.
 
-## From a release
+## Discover a published CLI
 
-Use the deployment's compatible published versioned Release. Restricted Daily
-downloads use `ob-labs/ai-vision-skills` and a fixed
-`delivery-v<product-version>` prerelease. The selected default below is
-`delivery-v0.1.0-daily.20261101`, selecting Linux x64 or ARM64 CLI archives with
-`uname` and declaring both `linux/amd64` and `linux/arm64` service images.
-It is available only after its exact prerelease is published and all seven assets
-are verified. Catalog changes do not establish release or runtime acceptance.
-An absent or draft Release stops installation and preserves the installed binary.
-Earlier accepted Releases remain retained unless retirement is separately
-authorized; do not silently use another version as a download fallback. The `.20261028.2` branch below preserves
-historical x64-only reader compatibility, not download availability.
+CLI delivery supports Linux x64, Apple Silicon, and Windows x64. Intel Mac,
+Linux ARM64, and Windows ARM64 delivery are paused. Selectors apply this scope
+to both channels and to explicit tags.
 
-The native CLI profile excludes legacy first-party Python resources at link time.
-The retired `delivery-v0.0.1-daily.20261028` CLI contains source-mode helpers and
-must not be used for strict native delivery.
+Set `AIV_SKILL_DIR` to the installed directory of **this** Skill, which contains
+`SKILL.md` and `scripts/`. The [shell helper](../scripts/install-cli.sh) and
+[PowerShell helper](../scripts/install-cli.ps1) use the same
+[release selector](../scripts/discover-cli.jq). They require `gh` and `jq`.
+Authenticate `gh` to `github.com` with an account that can read the selected
+repository. Release access and image pull access are independent.
 
-Use the operator's authenticated `gh` account with authorized read access; do
-not share tokens. Do not resolve this Daily through the old product `daily`
-pointer or `releases/latest`. Stable product Releases retain their original
-channel: for one of those, replace the repository with `ob-labs/ai-vision-ob`
-and the tag with its actual published `v<product-version>`. Confirm compatibility
-with the existing platform before replacing an installed CLI. A missing Release,
-archive, or supported host platform stops installation; a product source
-checkout is not a fallback. Keep downloads and extraction out of the caller's
-working directory:
+For **Daily**, discovery queries the private `ob-labs/ai-vision-skills` Releases
+API across all pages. It picks the highest numeric product version and update
+for the current client platform among compatible published prereleases. The result
+can be older than a Daily published for a different platform. **Stable** uses
+published stable `v` releases from `ob-labs/ai-vision-ob`; set `AIV_CHANNEL=stable`
+when that is the selected channel. An explicit `AIV_TAG` pins an exact release;
+set it before resolving if a deployment or upgrade requires a specific build.
+Discovery is read-only and uses no fixed default version or `releases/latest`.
+
+Read the returned JSON before proceeding. `tag` is the exact release for the CLI,
+`product_version` is the version printed by `aiv --version`, and `base_tag` is
+the corresponding base release. On macOS, a published Codex update can use a
+companion tag, with its base relation verified from the release manifest. The
+client architecture is independent of the Docker host architecture. Use the
+matching platform and datastore variables from the verified deployment guide.
+
+### Linux and macOS
 
 ```bash
-export PATH="$HOME/.local/bin:$PATH"
-(
-  set -eu
-  AIV_REPOSITORY=${AIV_REPOSITORY:-ob-labs/ai-vision-skills}
-  AIV_TAG=${AIV_TAG:-delivery-v0.1.0-daily.20261101}
-  AIV_INSTALL_DIR=${AIV_INSTALL_DIR:-"$HOME/.local/bin"}
-  export PATH="$AIV_INSTALL_DIR:$PATH"
-  [ "$AIV_TAG" != delivery-v0.0.1-daily.20261028 ] ||
-    { echo 'Select a supported native Daily; the earlier CLI contains legacy Python resources.' >&2; exit 1; }
-  case "$AIV_TAG" in
-    delivery-v*) AIV_PRODUCT_VERSION=${AIV_TAG#delivery-v}; AIV_PRERELEASE=true ;;
-    v*) AIV_PRODUCT_VERSION=${AIV_TAG#v}; AIV_PRERELEASE=false ;;
-    *) echo 'Select an exact published delivery-v or stable v tag.' >&2; exit 1 ;;
-  esac
-  case "$(uname -s)" in
-    Linux) AIV_PLATFORM=linux ;;
-    Darwin) AIV_PLATFORM=darwin ;;
-    *) echo 'Supported platforms: Linux and macOS' >&2; exit 1 ;;
-  esac
-  case "$(uname -m)" in
-    x86_64|amd64) AIV_ARCH=x64 ;;
-    arm64|aarch64) AIV_ARCH=arm64 ;;
-    *) echo 'Supported architectures: x64 and arm64' >&2; exit 1 ;;
-  esac
-  AIV_APPROVED_CLI_ASSETS=''
-  case "$AIV_TAG" in
-    delivery-v0.0.1-daily.20261028.2)
-      [ "$AIV_PLATFORM-$AIV_ARCH" = linux-x64 ] ||
-        { echo 'The explicit .20261028.2 delivery supports Linux x64 only.' >&2; exit 1; }
-      AIV_APPROVED_CLI_ASSETS='aiv-linux-x64.tar.gz' ;;
-    delivery-v0.0.1-daily.20261029|delivery-v0.1.0-daily.20261101)
-      case "$AIV_PLATFORM-$AIV_ARCH" in
-        linux-x64|linux-arm64) ;;
-        *) echo 'This delivery selects Linux x64 and ARM64 only.' >&2; exit 1 ;;
-      esac
-      AIV_APPROVED_CLI_ASSETS='aiv-linux-x64.tar.gz aiv-linux-arm64.tar.gz' ;;
-    delivery-v*)
-      echo 'Resolve an explicitly supported native Daily and its platform contract first.' >&2; exit 1 ;;
-  esac
-  AIV_PACKAGE="aiv-$AIV_PLATFORM-$AIV_ARCH.tar.gz"
-  AIV_TEMP=$(mktemp -d)
-  AIV_STAGED=''
-  trap 'rm -rf "$AIV_TEMP"; if [ -n "$AIV_STAGED" ]; then rm -f "$AIV_STAGED"; fi' EXIT HUP INT TERM
-  command -v gh >/dev/null 2>&1 || { echo 'GitHub CLI is required for restricted Release downloads.' >&2; exit 1; }
-  gh auth status --hostname github.com >/dev/null 2>&1 ||
-    { echo 'Authenticate gh with an authorized account before downloading.' >&2; exit 1; }
-  AIV_RESOLVED_TAG=$(gh release view "$AIV_TAG" -R "$AIV_REPOSITORY" \
-    --json tagName,isDraft,isPrerelease,publishedAt \
-    --jq "select(.isDraft == false and .isPrerelease == $AIV_PRERELEASE and .publishedAt != null) | .tagName")
-  [ "$AIV_RESOLVED_TAG" = "$AIV_TAG" ] ||
-    { echo 'The exact published Release is unavailable or has the wrong channel.' >&2; exit 1; }
-  if [ -n "$AIV_APPROVED_CLI_ASSETS" ]; then
-    [ "$AIV_REPOSITORY" = ob-labs/ai-vision-skills ] ||
-      { echo 'Restricted Daily assets belong to ob-labs/ai-vision-skills.' >&2; exit 1; }
-    AIV_ASSETS=$(gh release view "$AIV_TAG" -R "$AIV_REPOSITORY" \
-      --json assets --jq '.assets[].name' | LC_ALL=C sort)
-    AIV_EXPECTED_ASSETS=$(printf '%s\n' $AIV_APPROVED_CLI_ASSETS install-aiv.sh \
-      release-manifest.json release-images.vars.yaml release-seekdb.vars.yaml SHA256SUMS | LC_ALL=C sort)
-    [ "$AIV_ASSETS" = "$AIV_EXPECTED_ASSETS" ] ||
-      { echo 'The Daily must contain exactly its approved asset set.' >&2; exit 1; }
-  fi
-  gh release download "$AIV_TAG" -R "$AIV_REPOSITORY" \
-    -p "$AIV_PACKAGE" -p SHA256SUMS --dir "$AIV_TEMP"
-  if command -v sha256sum >/dev/null 2>&1; then
-    AIV_ACTUAL=$(sha256sum "$AIV_TEMP/$AIV_PACKAGE" | awk '{print $1}')
-  else
-    AIV_ACTUAL=$(shasum -a 256 "$AIV_TEMP/$AIV_PACKAGE" | awk '{print $1}')
-  fi
-  AIV_EXPECTED=$(awk -v f="$AIV_PACKAGE" '$2 == f {print $1; n++} END {if (n != 1) exit 1}' "$AIV_TEMP/SHA256SUMS")
-  [ -n "$AIV_EXPECTED" ] && [ "$AIV_EXPECTED" = "$AIV_ACTUAL" ] ||
-    { echo "checksum mismatch for $AIV_PACKAGE" >&2; exit 1; }
-  tar -xzf "$AIV_TEMP/$AIV_PACKAGE" -C "$AIV_TEMP" aiv
-  [ -f "$AIV_TEMP/aiv" ] && [ ! -L "$AIV_TEMP/aiv" ]
-  chmod 755 "$AIV_TEMP/aiv"
-  AIV_ACTUAL_VERSION=$("$AIV_TEMP/aiv" --version)
-  [ "$AIV_ACTUAL_VERSION" = "aiv $AIV_PRODUCT_VERSION" ] ||
-    { echo 'CLI product version differs from the selected Release.' >&2; exit 1; }
-  mkdir -p "$AIV_INSTALL_DIR"
-  AIV_STAGED=$(mktemp "$AIV_INSTALL_DIR/.aiv-install.XXXXXX")
-  cp "$AIV_TEMP/aiv" "$AIV_STAGED"
-  chmod 755 "$AIV_STAGED"
-  mv -f "$AIV_STAGED" "$AIV_INSTALL_DIR/aiv"
-  AIV_STAGED=''
-  command -v aiv
-  aiv --version
-)
+: "${AIV_SKILL_DIR:?Set this to the installed Skill directory}"
+sh "$AIV_SKILL_DIR/scripts/install-cli.sh" --resolve
 ```
 
-`AIV_TAG` selects an explicit compatible version; leaving it unset selects the
-prepared Daily above. `AIV_INSTALL_DIR` can select another permanent directory.
-The same recipe runs on Linux x64 and ARM64 without editing architecture values.
-Docker selects a service child manifest from the release's multi-platform image
-index on the deployment host; a CLI architecture does not choose the server's
-architecture. Before deployment, verify the manifest and matching vars through
-the deployment Skill.
+Discovery uses the client machine's architecture. Apple Silicon selects the arm64
+archive even if its shell runs under Rosetta. Review the selected version against the installed CLI and the
+platform you intend to connect to. Set `AIV_TAG` to the exact returned `tag` for
+this installation or upgrade, and keep the same channel and repository settings.
 
-A failed download, checksum or executable check stops installation and preserves
-the existing binary. Do not continue with stale output from an earlier attempt.
-The `delivery-v` tag prefix is distribution metadata; `aiv --version` prints the
-product version (`0.1.0-daily.20261101` for the selected default). The checksummed
-`install-aiv.sh` asset is an alternative only when it uses authenticated `gh`
-for private downloads and the same fixed repository/tag. This CLI installation
-does not require user-installed Python. The separate Quickstart Python SDK demo
-has its own runtime requirements.
-Before reporting installation complete, finish [durable PATH setup](path-setup.md)
-and verify the permanent binary in fresh interactive and login shells with a
-clean inherited PATH. A task-local export alone is insufficient. Querying an
-existing platform does not require Docker, registry login, deployment prerequisites
-or a local Agent hook.
+```bash
+: "${AIV_TAG:?Set this to the verified tag from discovery}"
+AIV_TAG="$AIV_TAG" sh "$AIV_SKILL_DIR/scripts/install-cli.sh" --install
+```
+
+The helper rechecks the pinned release, validates downloaded assets against
+published SHA-256 values, and checks the executable version before replacing the
+permanent binary. The default is `~/.local/bin/aiv`; set `AIV_INSTALL_DIR` to
+keep an existing CLI's custom directory. A failed verification leaves the prior
+executable in place. Finish [durable PATH setup](path-setup.md) and verify the
+chosen binary in fresh interactive and login shells.
+
+### Windows x64
+
+Run native PowerShell on Windows x64. The Daily route selects the published
+Windows preview when it includes the verified x64 ZIP and preview manifest. The
+helper validates the preview manifest and ZIP against authenticated GitHub asset
+digests. Stable ZIPs use the selected stable Release's checksums. Preview
+availability alone does not establish native Windows qualification.
+
+```powershell
+if (-not $env:AIV_SKILL_DIR) { throw 'Set AIV_SKILL_DIR to the installed Skill directory.' }
+& "$env:AIV_SKILL_DIR/scripts/install-cli.ps1" -Mode Resolve
+```
+
+Review the result, set `$env:AIV_TAG` to its exact `tag`, then run:
+
+```powershell
+& "$env:AIV_SKILL_DIR/scripts/install-cli.ps1" -Mode Install
+```
+
+The default is `%LOCALAPPDATA%\AI Vision\bin\aiv.exe`. Set `AIV_INSTALL_DIR`
+to preserve a custom path. Add that directory to the Windows user `Path` if
+needed. In a new PowerShell window, verify `Get-Command aiv`, `aiv --version`,
+and the required command help.
+
+An existing platform can be queried with its endpoint and SpaceKey. Docker, registry authentication, and local Agent hooks are separate operations.

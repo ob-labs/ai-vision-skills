@@ -21,7 +21,10 @@ First [prepare the fixed history start](../SKILL.md#fix-the-history-start-before
 in `./aivision.vars.yaml`. Generate it once only for confirmed empty storage;
 reuse the saved timestamp for retained data and all subsequent casts. Merge the
 selected published Release or Daily's [verified image variables](prerequisites.md#resolve-the-version-and-download-matching-assets)
-into that same private file, preserving its other settings. For explicitly
+into that same private file, preserving its other settings. For restricted Daily
+use a Linux x86 Docker daemon. If Apple Silicon or Windows x64 Agent clients
+are requested, verify the [compatible backend configuration](prerequisites.md#select-the-agent-client-backend-configuration)
+for the selected base and datastore before merging. For explicitly
 requested source images, follow [source build identity and verification](prerequisites.md#source-build-identity-and-verification)
 and use `IMAGE_PULL=missing` in the command below for unpublished local images.
 
@@ -71,7 +74,8 @@ flags retain their existing precedence.
 | Bundled OceanBase CE (default) | `OB_BACKEND=oceanbase` — use the command above |
 | Bundled OceanBase seekdb (lightweight option) | merge the verified `release-seekdb.vars.yaml`, including its backend and database image |
 | An OceanBase CE or seekdb you already run | keep `OB_MANAGED: "false"` and existing connection settings in that vars file; use `OB_BACKEND=seekdb` for seekdb |
-| Install a Release or Daily | Resolve a versioned Release and merge its verified vars, including `AIVISION_RELEASE_MANIFEST_BASE64`, into the same private vars file |
+| Install a Release or Daily | Resolve a compatible published base and merge its verified datastore vars into the same private vars file |
+| Enable Apple Silicon or Windows x64 Agent onboarding | Merge the verified [client preview backend configuration](prerequisites.md#select-the-agent-client-backend-configuration) for the exact base and datastore |
 | Kubernetes | `--target kubernetes --context <context>` — see [kubernetes](kubernetes.md) |
 | A second, isolated stack on the same host | `--namespace <name>` plus the port overrides below |
 
@@ -104,10 +108,9 @@ startup; existing volumes retain their
 password. Changing the variable does not rotate a database password.
 
 Use the selected manifest's pinned official upstream seekdb index and confirm
-it includes the actual Docker daemon platform. The prepared dual-platform Daily
-requires native AMD64 and ARM64 database children as well as matching service
-indices; a missing child is a publication gap. Do not silently use emulation or
-replace the selected database image. Resource defaults are 2 CPU, 2G memory, a 2G datafile,
+it includes the actual Docker daemon platform. Restricted Daily requires the
+native `linux/amd64` database child and matching service images. A missing
+child is a publication gap. Keep the exact database image pin. Resource defaults are 2 CPU, 2G memory, a 2G datafile,
 and 2G log disk, configurable through `SEEKDB_CPU_COUNT`, `SEEKDB_MEMORY_LIMIT`,
 `SEEKDB_DATAFILE_SIZE`, and `SEEKDB_LOG_DISK_SIZE`. These cover the database only.
 
@@ -341,7 +344,7 @@ docker compose --project-name "$AIV_COMPOSE_PROJECT" --file "$AIV_COMPOSE_BUNDLE
 Config --quiet avoids printing resolved secrets.
 
 The following standalone-file commands require an ordinary source CLI build.
-The restricted native CLI profile, including `0.1.0-daily.20261101`, rejects `--compose-file` before
+The restricted native CLI profile rejects `--compose-file` before
 Docker or deployment-state mutation. If that is the existing deployment mode,
 stop before replacing its CLI or changing configuration or services; this
 delivery provides no automatic conversion. CLI-managed `--target compose`
@@ -407,10 +410,11 @@ ordinary source builds, not this private native delivery.
 ## Agent machine onboarding
 
 Check the [native Agent client runtime](prerequisites.md#native-agent-client-runtime)
-on the Agent machine first. Verify a served Linux x64 or ARM64 installer target
-and require glibc 2.35 or newer; Debian Bookworm/glibc 2.36 is the recorded
-client baseline. The Docker host
-and Agent client can be different machines with different runtime libraries.
+on the Agent machine first. Verify that the deployed backend serves that client's
+installer. On Linux x64, require glibc 2.35 or newer. For Apple Silicon or
+Windows x64, use the matching published preview CLI and
+[backend configuration](prerequisites.md#select-the-agent-client-backend-configuration).
+Record deployment and Agent client platforms separately.
 
 Use the machine and user account that run the target coding Agent:
 
