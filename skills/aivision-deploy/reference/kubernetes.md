@@ -110,16 +110,15 @@ manifest is required for that local validation.
 
 For published builds, choose Release or Daily using the [shared channel flow](../SKILL.md#choose-release-or-daily)
 and download the [matching CLI and verified manifest](prerequisites.md#resolve-the-version-and-download-matching-assets).
-Restricted Daily uses an exact published `delivery-v<product-version>`
-prerelease in `ob-labs/ai-vision-skills`. The selected default
-`delivery-v0.1.0-daily.20261101` selects Linux x64/ARM64 CLI archives and both
-Linux service architectures, and is available only after publication and asset
-verification. Earlier accepted Releases remain retained unless retirement is separately authorized.
-Historical `.20261028.2` reader compatibility is x64-only. Confirm the CLI
-host and cluster node architectures independently. A Docker smoke or an OCI
-multi-platform index does not establish Kubernetes or ARM cluster acceptance;
-that evidence remains separate. Missing published assets or platform support
-stop this flow. Retain private historical evidence; old Release downloads are not guaranteed.
+For restricted Daily, select a published base `delivery-v<product-version>`
+prerelease whose manifest includes `linux/amd64`. Verify the workloads can run
+on Linux x86 nodes in the intended cluster. For a stable Release, use its
+published platform coverage. Preserve the cluster context and namespace.
+Use the base CE vars for the fixed Kubernetes path. Apply an Agent-client
+companion only if its Release documents Kubernetes support for that base.
+Docker smoke and OCI architecture availability are separate from Kubernetes
+acceptance. If the selected release lacks required assets or platform support,
+resolve a compatible release before deployment.
 Copy `SIGNOZ_IMAGE`, `GATEWAY_IMAGE`, `BE_IMAGE`, `AGENTLENS_IMAGE`, `FE_IMAGE`
 and `AIVISION_RELEASE_MANIFEST_BASE64` from its verified CE vars asset into one private
 `aivision.k8s.vars.yaml`, retaining existing Kubernetes settings. These digest
