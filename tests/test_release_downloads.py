@@ -8,10 +8,13 @@ import io
 import json
 import os
 from pathlib import Path
+import shutil
+import stat
 import subprocess
 import tarfile
 import tempfile
 import unittest
+import zipfile
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -67,7 +70,13 @@ def published(tag, *platforms, draft=False, unpublished=False, wrong_version=Fal
     assets["SHA256SUMS"] = "".join(f"{('0' * 64) if bad_checksum else digest(content)}  {name}\n"
                                   for name, content in assets.items()).encode()
     if "windows-x64" in platforms:
-        windows = b"Windows ZIP fixture for the discovery filter"
+        zip_output = io.BytesIO()
+        executable = zipfile.ZipInfo("aiv.exe")
+        executable.create_system = 3  # POSIX shell executable for the PowerShell fixture only.
+        executable.external_attr = (stat.S_IFREG | 0o755) << 16
+        with zipfile.ZipFile(zip_output, "w") as zipped:
+            zipped.writestr(executable, binary)
+        windows = zip_output.getvalue()
         assets["aiv-windows-x64.zip"] = windows
         assets["windows-preview.json"] = json.dumps({
             "release": {"tag": tag, "repository": PRIVATE}, "product_version": version,
@@ -121,13 +130,13 @@ else:
 class DownloadRecipeTests(unittest.TestCase):
     def run_recipe(self, releases, *, skill="aivision-quickstart", mode="--resolve", tag="", channel="",
                    os_name="Linux", arch="x86_64", arm_hardware="0", changed_readback=False,
-                   changed_download=None):
+                   changed_download=None, powershell=None):
         with tempfile.TemporaryDirectory(prefix="aiv-discovery-") as temporary:
             root = Path(temporary)
             tools, installed = root / "tools", root / "install"
             tools.mkdir()
             installed.mkdir()
-            binary = installed / "aiv"
+            binary = installed / ("aiv.exe" if powershell else "aiv")
             binary.write_bytes(ORIGINAL)
             exact = {release["tag_name"]: release for release, _ in releases}
             if changed_readback:
@@ -150,8 +159,21 @@ class DownloadRecipeTests(unittest.TestCase):
             env.update(PATH=str(tools) + os.pathsep + env["PATH"], AIV_TAG=tag, AIV_CHANNEL=channel,
                        AIV_TEST_ROOT=str(root), AIV_TEST_OS=os_name, AIV_TEST_ARCH=arch,
                        AIV_TEST_HARDWARE=arm_hardware, AIV_INSTALL_DIR=str(installed))
-            helper = ROOT / "skills" / skill / "scripts/install-cli.sh"
-            result = subprocess.run(["sh", str(helper), mode], cwd=root, env=env, capture_output=True, text=True, timeout=20)
+            scripts = ROOT / "skills" / skill / "scripts"
+            if powershell:
+                # Only the hardware probe is substituted so the POSIX test host
+                # can exercise the Windows recipient code with a shell fixture.
+                hardware = "[System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()"
+                script = (scripts / "install-cli.ps1").read_text()
+                self.assertEqual(script.count(hardware), 1)
+                helper = root / "install-cli.ps1"
+                helper.write_text(script.replace(hardware, "'X64'"))
+                shutil.copyfile(scripts / "discover-cli.jq", root / "discover-cli.jq")
+                command = [powershell, "-NoProfile", "-NonInteractive", "-File", str(helper),
+                           "-Mode", "Install" if mode == "--install" else "Resolve"]
+            else:
+                command = ["sh", str(scripts / "install-cli.sh"), mode]
+            result = subprocess.run(command, cwd=root, env=env, capture_output=True, text=True, timeout=20)
             calls_path = root / "calls.jsonl"
             calls = [json.loads(line) for line in calls_path.read_text().splitlines()] if calls_path.exists() else []
             return result, binary.read_bytes(), calls
@@ -202,6 +224,20 @@ class DownloadRecipeTests(unittest.TestCase):
                          (LINUX_NEW, LINUX_NEW, "windows-preview.json", "aiv-windows-x64.zip"))
         old, _ = published(LINUX_ARM, "windows-x64", rest_digests=False)
         self.assertIsNone(read_selection([[old]], "windows-x64"))
+
+    @unittest.skipUnless(os.name == "posix" and shutil.which("pwsh"), "PowerShell fixture needs pwsh on POSIX")
+    def test_powershell_replaces_existing_cli_after_exact_zip_verification(self):
+        releases = [published(LINUX_NEW, "linux-x64", "windows-x64")]
+        powershell = shutil.which("pwsh")
+        result, binary, _ = self.run_recipe(releases, mode="--install", tag=LINUX_NEW, powershell=powershell)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(b"0.1.0-daily.20261108", binary)
+        for tag, replacement in ((LINUX_NEW, "aiv-windows-x64.zip"), ("*", None)):
+            with self.subTest(tag=tag):
+                result, binary, _ = self.run_recipe(releases, mode="--install", tag=tag, powershell=powershell,
+                                                    changed_download=replacement)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(binary, ORIGINAL)
 
     def test_numeric_order_ignores_publication_page_order_and_wrong_channel(self):
         tags = ["delivery-v0.1.0-daily.20261108.2", "delivery-v0.1.0-daily.20261108.10", "v9.0.0"]
