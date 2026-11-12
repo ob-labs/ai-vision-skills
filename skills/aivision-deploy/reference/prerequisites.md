@@ -171,13 +171,14 @@ by product version, snapshot date, and numeric revision. Require the matching CL
 and the selected datastore vars asset. Use the published manifest for stable
 Release platform support. Repeat discovery for the next operation.
 
-When Apple Silicon or Windows x64 Agent onboarding is in scope, also require the matching
-published client artifacts and preview backend configuration below. For a new
-unpinned deployment, choose the newest base that satisfies those client needs as
-well as the server platform. For an existing deployment, verify the companion
-against its selected base and preserve the deployment identity. A different base
-requires the [ordinary upgrade workflow](upgrade.md#prepare-and-run-the-upgrade).
-Pin the exact base and companion tags after selection. Registry `daily` and `dev`
+When Apple Silicon or Windows x64 Agent onboarding is in scope, also require the
+matching published client artifacts and preview backend configuration. For a new
+unpinned deployment, choose the newest base that satisfies the client needs and
+server platform. For an existing deployment, verify the preview against its
+selected base and preserve deployment identity. A different base requires the
+[ordinary upgrade workflow](upgrade.md#prepare-and-run-the-upgrade).
+Pin the exact base tag and any historical companion tag after selection.
+Registry `daily` and `dev`
 tags do not select a product Release. On an authentication, download or checksum
 error, resolve that error before using the candidate. A confirmed incompatible
 candidate can be skipped for unpinned discovery within the requested channel.
@@ -233,21 +234,55 @@ Apply preview configuration only for the requested client platforms on a
 compatible base. Use the selected release's verified asset list and checksums.
 A macOS CLI runs on the Agent machine. The preview backend still runs on Linux.
 
-| Requested clients | Backend configuration for the published macOS preview |
-| --- | --- |
-| Apple Silicon Macs | `release-images.vars.yaml` for OceanBase CE or `release-seekdb.vars.yaml` for seekdb, from the macOS companion Release |
-| Linux x64 clients only | The selected base Release's CE or seekdb vars |
+| Published layout | OceanBase CE vars | seekdb vars | macOS checksums |
+| --- | --- | --- | --- |
+| Apple Silicon preview inside the base `delivery-v<product-version>` Release | `release-macos-oceanbase.vars.yaml` | `release-macos-seekdb.vars.yaml` | `SHA256SUMS.macos` |
+| Historical Apple Silicon `macos-codex-preview-v*` companion | `release-images.vars.yaml` from the companion | `release-seekdb.vars.yaml` from the companion | `SHA256SUMS` from the companion |
 
-For Apple Silicon, discover a published `macos-codex-preview-v*` companion for the exact
-base. Download `macos-codex-preview.json`, `SHA256SUMS`, and the chosen vars from
-that companion tag. Verify checksums and the vars identity in `assets`. Confirm
-its `release_tag`, `profile`, and `client["darwin/arm64"]` entry. Check that
-`base_release` equals the selected base tag, `backend.base_reference` equals
-its `images["aivision-be"]` digest reference, and `backend.apple_silicon.platform`
-is `linux/amd64`. Match `BE_IMAGE` or `BACKEND_IMAGE` to
-`backend.apple_silicon.reference`. Decode the companion vars'
+For Linux x64 clients, use the selected base's `release-images.vars.yaml` or
+`release-seekdb.vars.yaml`. For Apple Silicon, use the integrated macOS assets
+when the selected base publishes them. If the matching preview is only in a
+separate published companion, use that exact companion and its original asset
+names. The [CLI discovery result](install-cli.md#discover-a-published-cli)
+identifies the Mac asset `tag` and server `base_tag`.
+
+Download `macos-codex-preview.json`, the selected vars and the macOS checksums
+from the exact Mac asset tag into a separate directory. Set `AIV_MAC_RELEASE_TAG`,
+`AIV_MAC_VARS`, and `AIV_MAC_SUMS` from the verified layout above. The Mac tag is
+the base tag for an integrated preview. Use the checksum file from the same
+Release and verify one SHA-256 record for each selected file.
+
+```bash
+: "${AIV_MAC_RELEASE_TAG:?Set the selected Mac asset tag}"
+: "${AIV_MAC_VARS:?Set the selected Mac datastore vars filename}"
+: "${AIV_MAC_SUMS:?Set the Mac checksum filename}"
+AIV_MAC_WORKDIR=$(mktemp -d)
+gh release download "$AIV_MAC_RELEASE_TAG" --repo "$AIV_DELIVERY_REPOSITORY" \
+  --pattern macos-codex-preview.json --pattern "$AIV_MAC_VARS" \
+  --pattern "$AIV_MAC_SUMS" --dir "$AIV_MAC_WORKDIR" &&
+(
+  cd "$AIV_MAC_WORKDIR" &&
+  awk -v vars="$AIV_MAC_VARS" '
+    $2 == vars || $2 == "macos-codex-preview.json" { print; seen[$2]++ }
+    END { if (seen[vars] != 1 || seen["macos-codex-preview.json"] != 1) exit 1 }
+  ' "$AIV_MAC_SUMS" > SHA256SUMS.selected &&
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum -c SHA256SUMS.selected
+  else
+    shasum -a 256 -c SHA256SUMS.selected
+  fi
+)
+```
+
+Confirm that the verified manifest's `release_tag` equals the Mac asset tag,
+`base_release` equals the selected base tag, and `profile` is `macos-codex-preview`.
+Both tags are the same for the integrated layout. Check `client["darwin/arm64"]`
+and the selected vars SHA-256 in `assets`. Confirm `backend.base_reference`
+equals the base manifest's `images["aivision-be"]` digest reference and
+`backend.apple_silicon.platform` is `linux/amd64`. Match `BE_IMAGE` or
+`BACKEND_IMAGE` to `backend.apple_silicon.reference`. Decode the macOS vars'
 `AIVISION_RELEASE_MANIFEST_BASE64` and compare it with the base manifest. For this
-preview only `images["aivision-be"]` changes, to the declared companion digest.
+preview only `images["aivision-be"]` changes, to the declared macOS backend digest.
 Keep the four other service pins and the chosen datastore's upstream digest.
 Apple notarization is pending for this preview.
 
@@ -271,8 +306,8 @@ published backend explicitly covers both.
 For managed Docker/Compose use the chosen datastore asset and preserve its
 matching database selector and digest. For an external datastore, keep
 `OB_MANAGED: "false"` and the existing connection settings and database image
-policy. Apply a companion only to the target described by its Release. For
-Kubernetes, use the target's verified base service images unless a companion
+policy. Apply a preview only to the target described by its Release. For
+Kubernetes, use the target's verified base service images unless the preview
 explicitly supports that target.
 
 ## Install or upgrade the CLI when needed
@@ -281,9 +316,11 @@ Keep an installed CLI that matches the selected build and required capabilities.
 Otherwise use [CLI discovery and installation](install-cli.md#discover-a-published-cli)
 with the recorded version and client platform, then verify `aiv --version` and
 the required `--help` commands. Use the published server CLI for deployment and
-the matching Apple Silicon or Windows x64 CLI for Agent onboarding. If you use the checked
-`install-aiv.sh` asset, confirm its help and pass the exact repository and tag it
-supports. Finish the durable PATH checks below before running a lifecycle command.
+the matching Apple Silicon or Windows x64 CLI for Agent onboarding. The integrated
+Mac profile uses `install-aiv-macos.sh`; the base and historical companion each
+use their own `install-aiv.sh`. When using a supplied installer, verify it against
+its profile checksum file and follow its exact repository and tag. Finish the
+durable PATH checks below before running a lifecycle command.
 
 ### Finish durable PATH setup
 

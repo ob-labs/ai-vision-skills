@@ -40,7 +40,7 @@ Discover available [private Releases](https://github.com/ob-labs/ai-vision-skill
 |---|---|
 | Linux x64 CLI | The x64 Linux archive from a published base delivery. |
 | Linux x64 service deployment | The base manifest and OceanBase CE or seekdb vars for a Linux x64 Docker host. |
-| Apple Silicon Mac | The arm64 macOS archive from a published companion that identifies its base delivery. For Agent onboarding, select the matching macOS backend vars. |
+| Apple Silicon Mac | The arm64 macOS archive and matching backend vars from the base Daily's macOS assets or a published historical companion for that exact base. |
 | Windows x64 client preview | The Windows ZIP from a compatible published base delivery. For Agent onboarding, use the preview backend configuration in a Linux test deployment. |
 
 The current trial covers these platforms. Older Releases may retain additional archives for existing pinned installations. The CLI, Docker host and Agent may run on different machines. Check each platform independently. Private downloads use an authorized `gh` session. The CLI prints the actual product version, and the deployment uses the exact image digests in the selected manifest and vars.

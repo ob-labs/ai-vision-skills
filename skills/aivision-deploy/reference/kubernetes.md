@@ -114,8 +114,8 @@ For restricted Daily, select a published base `delivery-v<product-version>`
 prerelease whose manifest includes `linux/amd64`. Verify the workloads can run
 on Linux x86 nodes in the intended cluster. For a stable Release, use its
 published platform coverage. Preserve the cluster context and namespace.
-Use the base CE vars for the fixed Kubernetes path. Apply an Agent-client
-companion only if its Release documents Kubernetes support for that base.
+Use the base CE vars for the fixed Kubernetes path. Apply Agent-client preview
+vars only if their Release documents Kubernetes support for that base.
 Docker smoke and OCI architecture availability are separate from Kubernetes
 acceptance. If the selected release lacks required assets or platform support,
 resolve a compatible release before deployment.
