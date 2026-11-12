@@ -39,8 +39,10 @@ Discovery is read-only and uses no fixed default version or `releases/latest`.
 
 Read the returned JSON before proceeding. `tag` is the exact release for the CLI,
 `product_version` is the version printed by `aiv --version`, and `base_tag` is
-the corresponding base release. On macOS, a published Codex update can use a
-companion tag, with its base relation verified from the release manifest. The
+the corresponding base release. A base Daily can include Apple Silicon assets
+with `SHA256SUMS.macos`. For the same version, discovery prefers that layout.
+An older published macOS companion uses its own tag and `SHA256SUMS`. Both
+layouts verify the base relationship using the macOS release manifest. The
 client architecture is independent of the Docker host architecture. Use the
 matching platform and datastore variables from the verified deployment guide.
 

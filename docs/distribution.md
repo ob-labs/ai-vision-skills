@@ -2,13 +2,13 @@
 
 ## Current state
 
-This private repository owns the four maintained Skills and the restricted-trial Daily delivery channel. A base delivery uses a published `delivery-v<product-version>` GitHub prerelease. Platform companions identify the exact base delivery they extend. Published assets and manifest platform fields determine what is available.
+This private repository owns the four maintained Skills and the restricted-trial Daily delivery channel. A base delivery uses a published `delivery-v<product-version>` GitHub prerelease. It can include separately named Apple Silicon preview assets alongside the base files. Historical platform companions identify the exact base they extend. Published assets and manifest platform fields determine what is available.
 
 Discover published candidates through authenticated GitHub Release metadata. Select by product version, requested client platform and available artifacts. The current trial covers Linux x64 services and CLI, Apple Silicon macOS clients, and Windows x64 client previews. For deployment, validate the Linux x64 Docker host in the base manifest and use the database vars from the selected release. Show the resolved version before upgrading and keep its exact tag through the operation.
 
 Ordinary later publication preserves earlier accepted Releases, assets and tags. Retirement requires separate maintainer authorization; never silently substitute an older download for the selected version. Preserve private historical artifacts, checksums, catalog/build identities and qualification records for audit. Historical readers and tests may still recognize the six-asset, x64-only `.20261028.2` format; that compatibility does not promise a GitHub Release or downloadable assets. Published assets remain immutable while retained; retirement does not authorize moving an old tag or changing its bytes.
 
-The selected backend must serve the native Agent's own Linux x64 or ARM64 installer target, with glibc 2.35 or newer. Debian Bookworm/glibc 2.36 is the recorded client baseline. Check the Agent machine separately from the deployment machine: the static Go CLI and containerized services can run on a Docker host whose glibc is older. Such a host does not qualify the native installer; glibc 2.32 cannot launch this bundle. Keep the client ABI and actual test environment explicit in delivery evidence, and use a compatible Agent machine rather than a source-installer fallback.
+For the Linux x64 Agent trial, the selected backend must serve the matching native installer, which requires glibc 2.35 or newer. Debian Bookworm/glibc 2.36 is the recorded client baseline. Check the Agent machine separately from the deployment machine: the static Go CLI and containerized services can run on a Docker host whose glibc is older. Such a host does not qualify the native installer; glibc 2.32 cannot launch this bundle. Keep the client ABI and actual test environment explicit in delivery evidence, and use a compatible Agent machine rather than a source-installer fallback.
 
 Existing organization and repository permissions apply; this delivery adds no user or team access grants. Access by a recipient without product-source permissions must be checked independently. A maintainer's successful clone or package push does not prove recipient access.
 
@@ -34,7 +34,7 @@ An installed Skill must contain its execution prerequisites. Product source link
 For each restricted Daily delivery:
 
 1. Freeze one product version, qualified CLI archive, image digests, and deployment variables from the qualified product build. Product/CLI source and canonical deployment assets stay in the product repository; do not copy application source here.
-2. Use an immutable `delivery-v<product-version>` prerelease tag for the base. Publish checksums, the manifest, matching database vars and the archives for the selected platforms. A companion must name its exact published base and bind its own assets and backend digest. Keep source bundles, build plans, logs and internal reports in the product team's private build storage.
+2. Use an immutable `delivery-v<product-version>` prerelease tag for the base. Publish checksums, the manifest, matching database vars and the archives for the selected platforms. Mac preview metadata must name its exact base and asset tag and bind its own assets and backend digest. For an integrated preview, both tags equal the base tag. Keep the published base file bytes intact. Keep source bundles, build plans, logs and internal reports in the product team's private build storage.
 3. Render `ob-labs/ai-vision-skills` into `install-aiv.sh` before generating its checksum. Private asset downloads, including installer downloads, use the operator's authenticated GitHub CLI. An anonymous curl URL does not acquire private access by changing its repository.
 4. Retain actual product version, source SHA, component build identities, source URLs, and build or workflow provenance. Check that `aiv --version` reports the product version recorded by the selected Release.
 5. Publish the five application packages under `ghcr.io/ob-labs/ai-vision-skills/`: `aivision-be`, `aivision-fe`, `agentlens`, `antcollector-gw`, and `signoz-ob`. Use each full product-version tag and advance `:daily` to the latest accepted base Daily. Platform-specific preview backends use separate tags. Use fixed official upstream digest references for OceanBase CE and seekdb. Deploy using the exact manifest digests. Native deployment vars must include `NATIVE_PYTHON_RUNTIME: "true"`.
@@ -46,12 +46,15 @@ For each restricted Daily delivery:
 | `aiv-linux-<arch>.tar.gz` | CLI archive for a selected Linux architecture |
 | `aiv-darwin-<arch>.tar.gz` | CLI archive for a selected Mac architecture |
 | `aiv-windows-x64.zip` | Windows x64 CLI when the base delivery includes the client preview |
-| `install-aiv.sh` | Installer configured for authenticated private delivery |
+| `install-aiv.sh` | Base installer configured for authenticated private delivery |
+| `install-aiv-macos.sh` | Apple Silicon installer in a base Release with integrated Mac assets |
 | `release-manifest.json` | Product/build provenance, exact image references, and platform evidence |
 | `release-images.vars.yaml` | Matching OceanBase CE deployment variables |
 | `release-seekdb.vars.yaml` | Matching seekdb deployment variables |
-| Platform companion or preview manifest and vars | Base relationship and the backend configuration for the selected client preview |
-| `SHA256SUMS` | Checksums for the Release's published install artifacts and configuration |
+| `macos-codex-preview.json` | Exact base relationship, Mac client artifact identities and backend digest |
+| `release-macos-oceanbase.vars.yaml`, `release-macos-seekdb.vars.yaml` | Integrated Mac backend vars for the selected datastore |
+| `SHA256SUMS.macos` | Checksums for the integrated macOS assets |
+| `SHA256SUMS` | Base checksums, or profile checksums in a separately published historical Mac companion |
 
 The installed Skill selects the archive for the current trial platform. Older
 assets can remain available for already pinned installations. Validate the
@@ -61,7 +64,7 @@ trial records the database host separately.
 
 Existing deployments or saved vars that still reference the retired private `oceanbase-ce` or `seekdb` packages must use the current matching `release-images.vars.yaml` or `release-seekdb.vars.yaml` before deployment. Retain the deployment's existing credentials, datastore selection and data identity when updating those references.
 
-List the published prereleases in this repository, select a compatible version and then use its exact tag for the download. Filter on the client's package and any required server platform before comparing product versions. Use the companion manifest to check the base relationship when macOS assets ship separately. Windows client preview manifests can be included in the base Release. If discovery finds only an older compatible platform release, state the selected version and the platform gap before proceeding. Preserve an existing CLI on a failed download or compatibility check. Stable product Releases use their product channel.
+List the published prereleases in this repository, select a compatible version and then use its exact tag for the download. Filter on the client's package and any required server platform before comparing product versions. Check the Mac preview manifest's base relationship for both the integrated and historical companion layouts. Use the profile-specific checksums from the selected asset tag. Windows client preview manifests can be included in the base Release. If discovery finds only an older compatible platform release, state the selected version and the platform gap before proceeding. Preserve an existing CLI on a failed download or compatibility check. Stable product Releases use their product channel.
 
 ## Authentication boundaries
 

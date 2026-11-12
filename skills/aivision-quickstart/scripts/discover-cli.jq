@@ -7,6 +7,8 @@ def version_order:
 def uploaded($name):
   [.assets[]? | select(.name == $name and .state == "uploaded" and .size > 0)]
   | if length == 1 then .[0] else empty end;
+def has_base_assets:
+  [uploaded("release-manifest.json"), uploaded("SHA256SUMS")] | length == 2;
 def published:
   select(.draft == false and (.published_at | type == "string" and length > 0));
 
@@ -28,17 +30,19 @@ if (["daily", "stable"] | index($channel)) == null then error("Select daily or s
         select(.prerelease == true and $platform == "darwin-arm64")
         | $name | capture("^macos-codex-preview-v(?<version>\(daily))\\.(?<update>[1-9][0-9]*)$")
         | "delivery-v\(.version)" as $base
-        | select(any($releases[]; .tag_name == $base and .prerelease == true
-                    and ([uploaded("release-manifest.json"), uploaded("SHA256SUMS")] | length == 2)))
+        | select(any($releases[]; .tag_name == $base and .prerelease == true and has_base_assets))
         | {product_version: .version, base_tag: $base, profile: "macos", update: (.update | tonumber), manifest: "macos-codex-preview.json"}
       else
         select(.prerelease == true and $name != "delivery-v0.0.1-daily.20261028")
+        | select($platform != "darwin-arm64" or has_base_assets)
         | $name | capture("^delivery-v(?<version>\(daily))$")
         | {product_version: .version, base_tag: $name, update: 0}
         | if $platform == "windows-x64" then . + {profile: "windows", manifest: "windows-preview.json"}
+          elif $platform == "darwin-arm64" then . + {profile: "macos", manifest: "macos-codex-preview.json"}
           else . + {profile: "daily", manifest: "release-manifest.json"} end
       end) as $selection
-    | uploaded("SHA256SUMS") as $sums
+    | uploaded(if $selection.profile == "macos" and $selection.base_tag == $name
+               then "SHA256SUMS.macos" else "SHA256SUMS" end) as $sums
     | (if $selection.manifest then uploaded($selection.manifest) else null end) as $manifest
     | if $selection.profile == "windows" then
         select([$binary.digest, $manifest.digest] | all(type == "string" and test("^sha256:[a-f0-9]{64}$")))
@@ -46,5 +50,5 @@ if (["daily", "stable"] | index($channel)) == null then error("Select daily or s
     | $selection + {tag: $name, cli_platform: $platform, package: $package, release_id: .id,
                     assets: {package: $binary, manifest: $manifest, checksums: $sums}}
   ]
-| sort_by((.product_version | version_order)[0:5] + [.update, .tag])
+| sort_by((.product_version | version_order)[0:5] + [(.tag == .base_tag), .update, .tag])
 | last // empty
