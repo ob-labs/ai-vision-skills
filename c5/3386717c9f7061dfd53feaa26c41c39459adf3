@@ -1,0 +1,58 @@
+skills/README.md
+  s_ecdc0692ab40f8::t_6e4fdcf2e4cd81 66-68
+skills/aivision-deploy/reference/install-cli.md
+  s_ecdc0692ab40f8::t_4d8a7a946df109 42-45
+skills/aivision-metric/scripts/discover-cli.jq
+  s_ecdc0692ab40f8::t_57451390ab0aa3 10-11,33,37,41,44-45,53
+tests/test_release_downloads.py
+  s_ecdc0692ab40f8::t_11477effd036be 49,58-60,64,66-67,70,74-76,224-255
+  s_ecdc0692ab40f8::t_c26c2db67ce11e 256
+skills/aivision-quickstart/scripts/install-cli.sh
+  s_ecdc0692ab40f8::t_57451390ab0aa3 48,68,73,77
+README.md
+  s_ecdc0692ab40f8::t_6e4fdcf2e4cd81 43
+skills/aivision-metric/scripts/install-cli.sh
+  s_ecdc0692ab40f8::t_57451390ab0aa3 48,68,73,77
+skills/aivision-quickstart/scripts/discover-cli.jq
+  s_ecdc0692ab40f8::t_57451390ab0aa3 10-11,33,37,41,44-45,53
+skills/aivision-quickstart/reference/install-cli.md
+  s_ecdc0692ab40f8::t_4d8a7a946df109 42-45
+skills/aivision-trace/scripts/install-cli.sh
+  s_ecdc0692ab40f8::t_57451390ab0aa3 48,68,73,77
+skills/aivision-metric/reference/install-cli.md
+  s_ecdc0692ab40f8::t_4d8a7a946df109 42-45
+skills/aivision-deploy/SKILL.md
+  s_ecdc0692ab40f8::t_6e4fdcf2e4cd81 49-51
+CONTRIBUTING.md
+  s_ecdc0692ab40f8::t_6e4fdcf2e4cd81 11
+skills/aivision-deploy/reference/kubernetes.md
+  s_ecdc0692ab40f8::t_6e4fdcf2e4cd81 117-118
+skills/aivision-deploy/reference/prerequisites.md
+  s_ecdc0692ab40f8::t_6e4fdcf2e4cd81 174-181,237-283,285,309-310,319-323
+skills/aivision-deploy/scripts/discover-cli.jq
+  s_ecdc0692ab40f8::t_57451390ab0aa3 10-11,33,37,41,44-45,53
+skills/aivision-trace/scripts/discover-cli.jq
+  s_ecdc0692ab40f8::t_57451390ab0aa3 10-11,33,37,41,44-45,53
+skills/aivision-trace/reference/install-cli.md
+  s_ecdc0692ab40f8::t_4d8a7a946df109 42-45
+docs/distribution.md
+  s_ecdc0692ab40f8::t_6e4fdcf2e4cd81 5,11,37,49-50,54-57,67
+skills/aivision-deploy/scripts/install-cli.sh
+  s_ecdc0692ab40f8::t_57451390ab0aa3 48,68,73,77
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "c53386717c9f7061dfd53feaa26c41c39459adf3",
+  "prompts": {},
+  "sessions": {
+    "s_ecdc0692ab40f8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a181b8-d240-7e53-a5f3-51f48e363871",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Haili Zhang <2936504+webup@users.noreply.github.com>"
+    }
+  }
+}
