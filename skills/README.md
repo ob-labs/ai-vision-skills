@@ -63,9 +63,9 @@ also make the complete manual copy below. For the CLI, follow the installation
 reference in the installed Skill. It discovers a published compatible Release,
 identifies the exact tag for the operation, and checks the download before
 replacing an installed binary. The current trial offers Linux x64 and Apple
-Silicon clients, and a Windows x64 client preview. Mac packages may be in a
-companion to a base Daily. The Windows x64 preview uses a ZIP and its own verified
-manifest. For deployment, check the Docker host and
+Silicon clients, and a Windows x64 client preview. Mac packages can be part of
+the base Daily or a historical companion that identifies its exact base. The
+Windows x64 preview uses a ZIP and its own verified manifest. For deployment, check the Docker host and
 Agent platforms separately and use the selected release's digest-pinned vars.
 Stable product Releases retain their original channel.
 Installing a Skill, downloading a CLI Release, pulling platform images, and

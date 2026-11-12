@@ -45,6 +45,7 @@ tag=$(printf '%s\n' "$selection" | jq -r .tag)
 version=$(printf '%s\n' "$selection" | jq -r .product_version)
 package=$(printf '%s\n' "$selection" | jq -r .package)
 manifest=$(printf '%s\n' "$selection" | jq -r '.manifest // empty')
+checksums=$(printf '%s\n' "$selection" | jq -r '.assets.checksums.name')
 
 gh api --hostname github.com "repos/$repository/releases/tags/$tag" > "$tmp/selected.json"
 jq -e --argjson expected "$selection" '
@@ -64,16 +65,16 @@ check_asset_digest() {
   [ -z "$digest" ] || [ "$digest" = "sha256:$(hash_file "$tmp/$1")" ] || die "GitHub asset digest mismatch for $1."
 }
 check_hash() {
-  expected=$(awk -v file="$1" '$2 == file { print $1; n++ } END { if (n != 1) exit 1 }' "$tmp/SHA256SUMS") || die "Missing or duplicate checksum for $1."
+  expected=$(awk -v file="$1" '$2 == file { print $1; n++ } END { if (n != 1) exit 1 }' "$tmp/$checksums") || die "Missing or duplicate checksum for $1."
   [ -n "$expected" ] && [ "$expected" = "$(hash_file "$tmp/$1")" ] || die "Checksum mismatch for $1."
 }
 
 if [ -n "$manifest" ] || [ "$mode" = --install ]; then
-  set -- --pattern SHA256SUMS
+  set -- --pattern "$checksums"
   if [ -n "$manifest" ]; then set -- "$@" --pattern "$manifest"; fi
   if [ "$mode" = --install ]; then set -- "$@" --pattern "$package"; fi
   gh release download "$tag" --repo "github.com/$repository" "$@" --dir "$tmp"
-  check_asset_digest SHA256SUMS
+  check_asset_digest "$checksums"
 fi
 if [ -n "$manifest" ]; then
   check_asset_digest "$manifest"

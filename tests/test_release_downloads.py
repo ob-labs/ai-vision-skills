@@ -46,6 +46,7 @@ def published(tag, *platforms, draft=False, unpublished=False, wrong_version=Fal
               wrong_manifest=False, bad_checksum=False, rest_digests=True):
     stable = tag.startswith("v")
     companion = tag.startswith("macos-codex-preview-v")
+    integrated_macos = tag.startswith("delivery-v") and "darwin-arm64" in platforms
     if companion:
         version = tag.removeprefix("macos-codex-preview-v").rsplit(".", 1)[0]
         base = "delivery-v" + version
@@ -54,21 +55,25 @@ def published(tag, *platforms, draft=False, unpublished=False, wrong_version=Fal
         base = tag
     binary, archive = cli_archive("9.9.9" if wrong_version else version)
     assets = {"aiv-" + platform + ".tar.gz": archive for platform in platforms if platform != "windows-x64"}
-    if companion:
-        assets["macos-codex-preview.json"] = json.dumps({
+    macos_assets = {name: content for name, content in assets.items() if name.startswith("aiv-darwin-")}
+    if companion or integrated_macos:
+        macos_assets["macos-codex-preview.json"] = json.dumps({
             "profile": "macos-codex-preview", "release_tag": tag,
             "base_release": "delivery-v0.0.0-daily.20260101" if wrong_manifest else base,
             "client": {p: {"aiv_sha256": digest(binary)} for p in ("darwin/amd64", "darwin/arm64")},
-            "assets": {name: {"sha256": digest(content)} for name, content in assets.items()},
+            "assets": {name: {"sha256": digest(content)} for name, content in macos_assets.items()},
         }).encode()
-    elif not stable:
+        assets.update(macos_assets)
+    if not (stable or companion):
         assets["release-manifest.json"] = json.dumps({
             "channel": "daily", "product_version": "9.9.9" if wrong_manifest else version,
-            "cli_platforms": [p for p in platforms if p != "windows-x64"],
+            "cli_platforms": [p for p in platforms if p.startswith("linux-")],
             "delivery": {"release_tag": tag, "repository": PRIVATE},
         }).encode()
     assets["SHA256SUMS"] = "".join(f"{('0' * 64) if bad_checksum else digest(content)}  {name}\n"
-                                  for name, content in assets.items()).encode()
+                                  for name, content in assets.items() if not integrated_macos or name not in macos_assets).encode()
+    if integrated_macos:
+        assets["SHA256SUMS.macos"] = "".join(f"{digest(content)}  {name}\n" for name, content in macos_assets.items()).encode()
     if "windows-x64" in platforms:
         zip_output = io.BytesIO()
         executable = zipfile.ZipInfo("aiv.exe")
@@ -215,6 +220,39 @@ class DownloadRecipeTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertIn(b"0.1.0-daily.20261108", binary)
                 self.assertTrue(any(f"aiv-{target}.tar.gz" in call for call in calls))
+
+    def test_macos_prefers_integrated_release_and_uses_its_checksum_file(self):
+        integrated = published(LINUX_NEW, "linux-x64", "darwin-arm64", "windows-x64")
+        releases = [published(MAC, "darwin-arm64"), integrated]
+        self.assertNotIn(b"aiv-darwin-arm64.tar.gz", integrated[1]["SHA256SUMS"])
+        for arch, flag in (("arm64", "0"), ("x86_64", "1")):
+            with self.subTest(arch=arch):
+                result, binary, calls = self.run_recipe(releases, os_name="Darwin", arch=arch, arm_hardware=flag)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                selected = json.loads(result.stdout)
+                self.assertEqual((selected["tag"], selected["base_tag"], selected["profile"]), (LINUX_NEW, LINUX_NEW, "macos"))
+                self.assertEqual(binary, ORIGINAL)
+                download, = [call for call in calls if call[:2] == ["release", "download"]]
+                self.assertIn("SHA256SUMS.macos", download)
+                self.assertNotIn("SHA256SUMS", download)
+        result, binary, calls = self.run_recipe([integrated], os_name="Darwin", arch="arm64", mode="--install", tag=LINUX_NEW)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(b"0.1.0-daily.20261108", binary)
+        download, = [call for call in calls if call[:2] == ["release", "download"]]
+        self.assertEqual(download[2], LINUX_NEW)
+        self.assertIn("aiv-darwin-arm64.tar.gz", download)
+        for platform in ("linux-x64", "windows-x64"):
+            selected = read_selection([[integrated[0]]], platform)
+            self.assertEqual(selected["assets"]["checksums"]["name"], "SHA256SUMS")
+
+    def test_integrated_macos_verification_failures_preserve_existing_cli(self):
+        for options, runtime in (({"wrong_manifest": True}, {}), ({}, {"changed_download": "SHA256SUMS.macos"})):
+            with self.subTest(options=options, runtime=runtime):
+                release = published(LINUX_NEW, "linux-x64", "darwin-arm64", **options)
+                result, binary, _ = self.run_recipe([release], mode="--install", tag=LINUX_NEW,
+                                                     os_name="Darwin", arch="arm64", **runtime)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(binary, ORIGINAL)
 
     def test_selects_windows_preview_without_requiring_its_zip_in_base_sums(self):
         release, assets = published(LINUX_NEW, "linux-x64", "windows-x64")

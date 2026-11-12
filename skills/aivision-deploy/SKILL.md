@@ -46,8 +46,9 @@ server. Keep an explicit requested version and
 reuse the recorded selection for retries. A missing compatible publication stops
 that path. Follow [version resolution and matching assets](reference/prerequisites.md#resolve-the-version-and-download-matching-assets).
 
-For Apple Silicon Agent onboarding, find a published macOS companion for the
-same base. For Windows x64, use the verified preview override only when
+For Apple Silicon Agent onboarding, use the macOS assets in the selected Daily
+when present. A published historical companion is compatible only with its
+exact base. For Windows x64, use the verified preview override only when
 requested. Preserve the base release's other images and datastore settings.
 See [Agent-client backend selection](reference/prerequisites.md#select-the-agent-client-backend-configuration)
 for matching configuration and acceptance limits.
