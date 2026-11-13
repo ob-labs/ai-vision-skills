@@ -1,6 +1,6 @@
 ---
 name: aivision-deploy
-description: Deploy, retry, upgrade or verify the complete AI Vision platform through default Docker Go CLI, optional Go-controlled native Docker Compose, or fixed Kubernetes deployment. Preserve the selected datastore, deployment identity, credentials and retained telemetry across lifecycle operations.
+description: Install AI Vision All-in-One for a quick trial or personal use, or deploy, verify and upgrade the distributed platform with Docker, Compose or Kubernetes. Preserve the selected datastore, deployment identity and telemetry.
 ---
 
 # AI Vision Deployment
@@ -9,6 +9,19 @@ Use the selected target and its maintained lifecycle entry point. Deployment
 assets and capability boundaries remain product-owned and are embedded in the
 matching released CLI. This Skill bundles recipient instructions; normal
 deployment requires neither a product checkout nor private source-document access.
+
+## Choose a deployment mode
+
+| Situation | Start here |
+|---|---|
+| First try or personal use on a Linux x86-64 or ARM64 Docker host | Recommend [All-in-One Preview](reference/all-in-one.md) when a verified bundle matches the host. One container includes the platform and embedded seekdb, with data in one named Docker volume. Follow that guide through Agent onboarding and Trace verification. |
+| New shared deployment, an external database, or an explicit distributed Docker, Compose or Kubernetes target | Follow the distributed deployment below, including its supported platforms and datastore choices. |
+| Existing instance | Keep its mode, datastore and identity. Use the [All-in-One operations guide](reference/all-in-one.md#stop-restart-or-recreate) for an existing preview or the [distributed upgrade workflow](reference/upgrade.md) for an existing distributed installation. |
+
+Check the Docker host separately from the browser or Agent machine. If no
+verified preview bundle matches the Linux host, check the distributed target's
+platform support or use an eligible Linux VM for the trial. Honor an explicit
+deployment or version choice. The steps below apply to distributed deployments.
 
 ## Upgrade an existing installation
 
@@ -417,6 +430,8 @@ on other machines, override `BIND_ADDR` and `PUBLIC_HOST` as described in
 
 Skill detail:
 
+- [reference/all-in-one.md](reference/all-in-one.md) — quick trial and personal
+  deployment, private or offline install, Agent onboarding and volume retention
 - [reference/docker.md](reference/docker.md) — Docker target: the one command, the
   component/port table, selecting seekdb, reusing an existing database, a second isolated stack,
   serving users beyond the local host

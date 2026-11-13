@@ -29,6 +29,29 @@ The manifest's catalog commit identifies the frozen Skill snapshot selected for 
 
 An installed Skill must contain its execution prerequisites. Product source links are maintainer provenance, not a requirement to clone or read private source before using a Skill. Plugin binaries and onboarding scripts continue to be served by the deployed platform; this catalog is not a second plugin distribution endpoint.
 
+## All-in-One preview delivery
+
+The [All-in-One Preview](../skills/aivision-deploy/reference/all-in-one.md) is
+for quick trials and personal use. An immutable
+`all-in-one-preview-v<version>` prerelease carries `install-all-in-one.py`,
+`SHA256SUMS`, and the complete asset set for each architecture qualified for
+that release. Linux x86-64 uses `all-in-one-manifest.json`,
+`aiv-all-in-one-linux-amd64.tar.gz`, and the matching `aiv-linux-x64.tar.gz`
+CLI. Linux ARM64 uses
+`all-in-one-manifest-arm64.json`, `aiv-all-in-one-linux-arm64.tar.gz`, and the
+matching `aiv-linux-arm64.tar.gz` CLI. Both manifest formats bind the platform
+and image archive to the exact image ID and record the base Daily. Bundled
+`agent_cli` metadata binds the archive length, archive and executable SHA-256,
+and CLI version. The installed Skill
+discovers this profile separately from the distributed base and CLI channels.
+The preview uses Release assets; the distributed GHCR packages, `:daily`
+tags, and database vars continue to follow the base-delivery contract below.
+
+Before publication, verify the intended assets through a fresh install on
+each intended native Linux architecture. Check Agent onboarding, Trace
+readback, rule diagnosis, and same-version recreation with the named volume.
+Read back the private Release metadata and assets after publication.
+
 ## Transitional binary delivery
 
 For each restricted Daily delivery:
