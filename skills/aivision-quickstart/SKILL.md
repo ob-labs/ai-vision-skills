@@ -6,10 +6,13 @@ description: Use when a user wants a first hands-on AI Vision experience, an emp
 # AI Vision Quickstart
 
 Help a user experience their own AI Vision installation with a small test Agent.
-Reuse an existing instance; if there is none, follow the
+Reuse an existing instance. For a first try or personal deployment on a Linux
+x86-64 Docker host, choose **All-in-One Preview** in the
 [deployment Skill](https://github.com/ob-labs/ai-vision-skills/tree/main/skills/aivision-deploy)
-to deploy and verify the requested Release/Daily first. Installing this Skill
-alone does not install the platform, its CLI or the Python demo dependencies.
+from the same catalog version. That Skill also covers explicitly selected
+distributed targets and helps verify a compatible installation. Installing this
+Skill alone installs its guidance and demo, which still need a running platform
+and demo dependencies.
 
 The default outcome is a configured model connection, a test Agent, **four real model
 requests in two two-turn Sessions**, readable Traces and a persisted diagnosis

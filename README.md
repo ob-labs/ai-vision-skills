@@ -2,6 +2,12 @@
 
 The maintained AI Vision Skill catalog for deploying the platform, trying an Agent, inspecting traces, and querying usage. This repository is the canonical source for these Skills and the restricted-trial Daily delivery channel. Product source, CLI builds, canonical deployment assets, and telemetry plugin implementation remain in the product repository.
 
+## Choose how to get started
+
+- **Quick trial or personal use** on a Linux x86-64 Docker host: start with the [All-in-One Preview](skills/aivision-deploy/reference/all-in-one.md). One container includes AI Vision and embedded seekdb. Keep its named volume to retain your data.
+- **Shared deployment or an external database**: follow the [distributed deployment guide](skills/aivision-deploy/SKILL.md) for Docker, Compose, or Kubernetes on a supported host.
+- **Already running AI Vision**: keep your deployment and use [Quickstart](skills/aivision-quickstart/SKILL.md) to try a test Agent and view its Traces.
+
 ## Install
 
 The repository is currently private. Use an authorized Git credential, GitHub CLI session, or SSH connection to access it. Repository access, CLI downloads, image pulls, and AI Vision credentials are separate operations.
@@ -21,7 +27,7 @@ The upstream Skills CLI requires Node.js 22.20 or later. Validation uses `skills
 
 | Skill | Use |
 |---|---|
-| [aivision-deploy](skills/aivision-deploy/SKILL.md) | Deploy, verify, and upgrade the platform while retaining deployment identity and telemetry |
+| [aivision-deploy](skills/aivision-deploy/SKILL.md) | Install the All-in-One Preview or deploy, verify, and upgrade the distributed platform |
 | [aivision-quickstart](skills/aivision-quickstart/SKILL.md) | Reuse an existing platform, configure a model, and exercise real requests with a test Agent |
 | [aivision-trace](skills/aivision-trace/SKILL.md) | Query and inspect traces and export selected data |
 | [aivision-metric](skills/aivision-metric/SKILL.md) | Query latency, errors, usage, and available cost metrics |
@@ -33,6 +39,8 @@ Copy the complete Skill directory for manual installation: `SKILL.md`, reference
 If you previously installed from `ob-labs/ai-vision-ob`, install again from `ob-labs/ai-vision-skills` for the same scope and selected agent. Check the installation summary and local copies before removing the old source. `skills update` follows the recorded origin and does not switch repositories automatically. Do not remove unrelated Skills or overwrite local customizations without reviewing them.
 
 ## Distribution phases
+
+All-in-One is available through a separate Linux x86-64 [preview Release](skills/aivision-deploy/reference/all-in-one.md#install-and-open-ai-vision). Its installer resolves a compatible preview tag and loads a verified single-image archive into Docker.
 
 Discover available [private Releases](https://github.com/ob-labs/ai-vision-skills/releases) using the CLI installation guide bundled with each Skill. The guide identifies the client operating system and hardware, finds a published compatible Daily and pins its exact tag for the download. It also supports selecting an explicit version. Compare the selected product version with the installed CLI or deployment before upgrading.
 

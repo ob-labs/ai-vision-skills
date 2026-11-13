@@ -15,8 +15,12 @@ reuses an existing instance and runs its bundled Python SDK demo; follow its
 [workflow](aivision-quickstart/reference/workflow.md) for the runtime, private
 model credentials, platform access, and browser setup/readback steps.
 
-Deployment and query Skills use the `aiv` CLI. Each checks its prerequisites
-and guides CLI installation on the machine where its commands will run.
+For a quick trial or personal use on a Linux x86-64 Docker host, start with
+[All-in-One Preview](aivision-deploy/reference/all-in-one.md). Its bundled
+installer sets up the platform. Install `aiv` on the Agent machine for native
+Agent onboarding. Distributed deployments and queries also use `aiv`; their
+Skills check prerequisites and guide CLI installation on the machine where
+each command will run.
 
 Start with `command -v aiv` and `aiv --version` in that terminal. If `aiv` is
 already in `~/.local/bin`, restore that directory to PATH before downloading
@@ -89,17 +93,17 @@ repository root and check an existing installed copy before replacing it. A
 separately installed Skill does not include the repository's CLI source; Skills
 that need the CLI provide Release installation instructions.
 
-Deployment leaves `aiv` installed in a permanent directory with supported-shell
-PATH setup verified in a fresh terminal. Normal deployment and maintenance use
-the CLI directly, retaining the original target and identity/configuration
-selectors; no task-local `manage` wrapper is needed.
+For distributed deployment and native Agent onboarding, keep `aiv` installed
+in a permanent directory with PATH verified in a fresh terminal. Use the CLI
+directly for distributed maintenance, retaining the original target and
+identity/configuration selectors.
 
 ## Available Skills
 
 | Skill | Purpose |
 |---|---|
 | [`aivision-quickstart`](aivision-quickstart/SKILL.md) | Reuse an existing platform, configure a model, and run a test Agent with real requests, Trace/Session readback, and diagnosis |
-| [`aivision-deploy`](aivision-deploy/SKILL.md) | Deploy, verify and upgrade the whole AI Vision stack with `aiv`, preserving the target (Docker, optional Compose or Kubernetes), datastore and deployment identity |
+| [`aivision-deploy`](aivision-deploy/SKILL.md) | Install All-in-One for a quick trial or personal use, or deploy and maintain the distributed stack with Docker, Compose or Kubernetes |
 | [`aivision-trace`](aivision-trace/SKILL.md) | Query, inspect and export LLM traces with `aiv query`, and compose those exports into an evaluation dataset |
 | [`aivision-metric`](aivision-metric/SKILL.md) | Query complete time-window trace metrics with usage coverage; inspect SQL capabilities or use verified details for custom analysis |
 
@@ -155,6 +159,7 @@ skills/
 ├── aivision-deploy/
 │   ├── SKILL.md              # entry point: what the agent reads first
 │   └── reference/            # depth, read on demand from SKILL.md
+│       ├── all-in-one.md
 │       ├── docker.md
 │       ├── kubernetes.md
 │       ├── prerequisites.md
