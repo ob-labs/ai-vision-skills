@@ -4,7 +4,7 @@ The maintained AI Vision Skill catalog for deploying the platform, trying an Age
 
 ## Choose how to get started
 
-- **Quick trial or personal use** on a Linux x86-64 Docker host: start with the [All-in-One Preview](skills/aivision-deploy/reference/all-in-one.md). One container includes AI Vision and embedded seekdb. Keep its named volume to retain your data.
+- **Quick trial or personal use** on a compatible Linux Docker host: start with the [All-in-One Preview](skills/aivision-deploy/reference/all-in-one.md). One container includes AI Vision and embedded seekdb. Keep its named volume to retain your data.
 - **Shared deployment or an external database**: follow the [distributed deployment guide](skills/aivision-deploy/SKILL.md) for Docker, Compose, or Kubernetes on a supported host.
 - **Already running AI Vision**: keep your deployment and use [Quickstart](skills/aivision-quickstart/SKILL.md) to try a test Agent and view its Traces.
 
@@ -40,7 +40,7 @@ If you previously installed from `ob-labs/ai-vision-ob`, install again from `ob-
 
 ## Distribution phases
 
-All-in-One is available through a separate Linux x86-64 [preview Release](skills/aivision-deploy/reference/all-in-one.md#install-and-open-ai-vision). Its installer resolves a compatible preview tag and loads a verified single-image archive into Docker.
+All-in-One uses a separate [preview Release](skills/aivision-deploy/reference/all-in-one.md#install-and-open-ai-vision). Its installer resolves a preview tag with assets for the Linux Docker host's architecture and loads a verified single-image archive. The matching Agent CLI can be discovered and installed from the same preview on supported Linux clients.
 
 Discover available [private Releases](https://github.com/ob-labs/ai-vision-skills/releases) using the CLI installation guide bundled with each Skill. The guide identifies the client operating system and hardware, finds a published compatible Daily and pins its exact tag for the download. It also supports selecting an explicit version. Compare the selected product version with the installed CLI or deployment before upgrading.
 

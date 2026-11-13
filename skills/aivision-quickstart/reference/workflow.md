@@ -12,7 +12,7 @@ Read About/build information rather than assuming a source checkout or an image
 tag proves the running version. For a new installation, use the
 [deployment Skill](https://github.com/ob-labs/ai-vision-skills/tree/main/skills/aivision-deploy)
 from the same catalog version. Select All-in-One Preview for a quick trial or
-personal use on a Linux x86-64 Docker host.
+personal use on a Linux Docker host with a matching verified bundle.
 Do not redeploy or upgrade a working instance just to populate a demo.
 
 Sign in at `/login`, or use the existing CLI's account workflow if needed:

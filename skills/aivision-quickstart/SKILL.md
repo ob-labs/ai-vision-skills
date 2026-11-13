@@ -7,7 +7,7 @@ description: Use when a user wants a first hands-on AI Vision experience, an emp
 
 Help a user experience their own AI Vision installation with a small test Agent.
 Reuse an existing instance. For a first try or personal deployment on a Linux
-x86-64 Docker host, choose **All-in-One Preview** in the
+Docker host with a matching verified bundle, choose **All-in-One Preview** in the
 [deployment Skill](https://github.com/ob-labs/ai-vision-skills/tree/main/skills/aivision-deploy)
 from the same catalog version. That Skill also covers explicitly selected
 distributed targets and helps verify a compatible installation. Installing this

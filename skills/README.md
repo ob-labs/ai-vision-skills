@@ -15,9 +15,9 @@ reuses an existing instance and runs its bundled Python SDK demo; follow its
 [workflow](aivision-quickstart/reference/workflow.md) for the runtime, private
 model credentials, platform access, and browser setup/readback steps.
 
-For a quick trial or personal use on a Linux x86-64 Docker host, start with
-[All-in-One Preview](aivision-deploy/reference/all-in-one.md). Its bundled
-installer sets up the platform. Install `aiv` on the Agent machine for native
+For a quick trial or personal use on a compatible Linux Docker host, start
+with [All-in-One Preview](aivision-deploy/reference/all-in-one.md). Its bundled
+installer selects assets for the host architecture. Install `aiv` on the Agent machine for native
 Agent onboarding. Distributed deployments and queries also use `aiv`; their
 Skills check prerequisites and guide CLI installation on the machine where
 each command will run.

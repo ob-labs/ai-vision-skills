@@ -7,8 +7,12 @@ installation, an external database, or an existing distributed stack.
 
 ## Install and open AI Vision
 
-Use a **Linux x86-64** machine or VM with Python 3.8+ and access to a running
-local Docker daemon. The preview uses 2 CPU and a 6 GiB container memory limit.
+Use a **Linux x86-64 or ARM64** machine or VM with Python 3.8+ and access to a
+local Docker daemon of the same architecture. The installer selects assets
+for the native Linux architecture. Online installation requires a published
+preview with a complete asset set for that architecture. A verified local
+preview bundle also supports offline installation.
+The preview uses 2 CPU and a 6 GiB container memory limit.
 Allow 6 GiB for the container and disk space for the image and growing data
 volume. Ports `5174` for Web and `4318` for OTLP/HTTP bind to loopback. Choose
 unused ports if another service already uses either one.
@@ -35,12 +39,20 @@ the verified archive into Docker. It needs no container-registry login,
 `aiv cast`, or separate database image. A missing compatible release or a
 failed verification stops installation.
 
-For an offline host, download `install-all-in-one.py`,
-`all-in-one-manifest.json`, `aiv-all-in-one-linux-amd64.tar.gz`, and `SHA256SUMS`
-from the same [private Release](https://github.com/ob-labs/ai-vision-skills/releases)
-and transfer them to a single directory. Verify the files before running the
-installer. This path uses the bundled archive and works without `gh` on the
-Docker host.
+For a local or offline install, transfer the complete verified candidate or the
+matching [private Release](https://github.com/ob-labs/ai-vision-skills/releases)
+assets into a single directory. Both architectures need `install-all-in-one.py`
+and `SHA256SUMS`.
+
+| Docker host | Additional assets |
+|---|---|
+| Linux x86-64 | `all-in-one-manifest.json`, `aiv-all-in-one-linux-amd64.tar.gz`, `aiv-linux-x64.tar.gz` when included |
+| Linux ARM64 | `all-in-one-manifest-arm64.json`, `aiv-all-in-one-linux-arm64.tar.gz`, `aiv-linux-arm64.tar.gz` |
+
+Verify the files before running the installer. This path works without `gh` on
+the Docker host. If an authorized Release contains both architectures and you
+only download one set, use `sha256sum --check --ignore-missing SHA256SUMS`.
+Confirm every file in your set is present and reports `OK`.
 
 ```sh
 cd /path/to/all-in-one-release-assets
@@ -66,28 +78,39 @@ ssh -N -o ExitOnForwardFailure=yes \
 
 ## Connect an Agent and find its Trace
 
-The verified preview path uses a Linux x86-64 Agent client with glibc 2.35 or
-later. Run `getconf GNU_LIBC_VERSION` on the machine running the Agent. The
-Docker host, browser and Agent can be different machines. For native Agent
-onboarding on a different client OS, check the matching published backend
-and client combination in the [distributed guide](prerequisites.md#select-the-agent-client-backend-configuration).
+Run `getconf GNU_LIBC_VERSION` on the Linux Agent machine and require glibc
+2.35 or later. Match the CLI to the **Agent machine's** CPU. Check the
+qualification of the selected preview for its matching native Agent payload.
+The Docker host, browser and Agent can be different machines. For a different
+client OS, check the published backend and client combination in the
+[distributed guide](prerequisites.md#select-the-agent-client-backend-configuration).
 
-1. Install or reuse the matching Linux `aiv` on the Agent machine. The
-   installer output and `all-in-one-manifest.json` identify its `base_release`.
-   If `aiv` is missing or incompatible, set `base_release` to that exact tag
-   and use the [bundled CLI installer](install-cli.md#discover-a-published-cli)
-   with `gh` and `jq` on the connected Agent machine:
+1. Install or reuse the matching Linux `aiv` on the Agent machine. Copy the
+   All-in-One installer there, or use the copy in the installed `aivision-deploy`
+   Skill. Use the exact `preview_tag` that installed the platform. The
+   installer selects the matching CLI for the Agent machine, verifies its
+   SHA-256, architecture and version, and installs it to `~/.local/bin/aiv`.
+   It uses the preview's own CLI archive when included. For an older x86-64
+   preview that lists a base release, the online installer finds that exact
+   base release's verified x86-64 CLI.
 
    ```sh
    : "${AIV_SKILL_DIR:?Set this to the installed aivision-deploy directory}"
-   : "${base_release:?Set this to the matching CLI release tag printed by the installer}"
-   AIV_CHANNEL=daily AIV_TAG="$base_release" sh "$AIV_SKILL_DIR/scripts/install-cli.sh" --install
+   : "${preview_tag:?Set this to the exact All-in-One preview tag}"
+   installer="$AIV_SKILL_DIR/scripts/install-all-in-one.py"
+   python3 "$installer" --tag "$preview_tag" --resolve-cli &&
+     python3 "$installer" --tag "$preview_tag" --install-cli
    ```
 
-   For an offline Agent machine, bring the matching verified Linux CLI from the
-   base release. Confirm `command -v aiv`, `aiv --version` and
-   `aiv connect --help` in the same terminal you will use for onboarding. The
-   platform provides the Agent collection payload during onboarding.
+   For an offline Agent machine, transfer the installer, `SHA256SUMS`, the
+   preview manifest for that architecture and its matching CLI archive. From
+   that directory, use `python3 ./install-all-in-one.py --from-dir "$PWD"
+   --install-cli`. The CLI-only install requires no Docker. An older x86-64
+   preview whose CLI came from a separate base release needs a verified copy
+   of that base CLI brought to the offline machine. Complete
+   [PATH setup](prerequisites.md#finish-durable-path-setup), and verify
+   `command -v aiv`, `aiv --version` and `aiv connect --help`. The platform
+   provides the Agent collection payload during onboarding.
 2. Open **Agent Access** (`/access`), select your Space and Agent (for example,
    Codex), and generate the installation command. Run the complete command
    unchanged on the Agent machine. The single-use authorization expires after
@@ -118,7 +141,8 @@ reattaches `aiv-all-in-one-data` at `/data` by default. This volume holds local
 accounts, configuration, Traces and diagnosis records. Keep it when replacing
 the container. Sign in again and read back a known Trace after recreation.
 
-Use the same-version procedure above for the preview. Cross-version preview
-upgrades and moving existing distributed data into this volume need separate
-validation. Resolve a release on request, show its exact tag, and preserve
-the current instance and data when evaluating another preview.
+Use the same-version procedure above for the preview. For example, recreate
+an existing deployment using its recorded original tag even after another
+preview has been published. Use a new `--name` and unused ports to try a
+different tag alongside it. Cross-version preview upgrades and moving
+existing distributed data into this volume need separate validation.
