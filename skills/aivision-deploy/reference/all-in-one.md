@@ -56,7 +56,7 @@ Confirm every file in your set is present and reports `OK`.
 
 ```sh
 cd /path/to/all-in-one-release-assets
-sha256sum --check SHA256SUMS &&
+sha256sum --check --ignore-missing SHA256SUMS &&
   python3 ./install-all-in-one.py --from-dir "$PWD"
 ```
 
