@@ -4,7 +4,7 @@ The maintained AI Vision Skill catalog for deploying the platform, trying an Age
 
 ## Choose how to get started
 
-- **Quick trial or personal use** on a compatible Linux Docker host: start with the [All-in-One Preview](skills/aivision-deploy/reference/all-in-one.md). One container includes AI Vision and embedded seekdb. Keep its named volume to retain your data.
+- **Quick trial or personal use** on a compatible Linux Docker host: start with the [All-in-One Preview](skills/aivision-deploy/reference/all-in-one.md). Run the installer directly or ask a coding Agent to use the deployment Skill. If your preview includes the sample helper, send a synthetic Trace after sign-up.
 - **Shared deployment or an external database**: follow the [distributed deployment guide](skills/aivision-deploy/SKILL.md) for Docker, Compose, or Kubernetes on a supported host.
 - **Already running AI Vision**: keep your deployment and use [Quickstart](skills/aivision-quickstart/SKILL.md) to try a test Agent and view its Traces.
 

@@ -47,10 +47,18 @@ discovers this profile separately from the distributed base and CLI channels.
 The preview uses Release assets; the distributed GHCR packages, `:daily`
 tags, and database vars continue to follow the base-delivery contract below.
 
+A preview can also carry `aiv-all-in-one-linux-<architecture>.tar.zst`. Its
+manifest records `zstd_archive`, `zstd_archive_bytes`, and `zstd_archive_sha256`.
+The gzip and zstd archives must decode to identical Docker archives, and
+`SHA256SUMS` covers both formats. Publish the matching checksummed
+`sample-trace.py` with releases that offer `--sample-trace`.
+
 Before publication, verify the intended assets through a fresh install on
 each intended native Linux architecture. Check Agent onboarding, Trace
 readback, rule diagnosis, and same-version recreation with the named volume.
-Read back the private Release metadata and assets after publication.
+For a dual-format preview, verify the native automatic format and gzip install
+paths and the sample Trace from the actual bundle when included. Read back the
+private Release metadata and assets after publication.
 
 ## Transitional binary delivery
 

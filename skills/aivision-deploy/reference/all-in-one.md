@@ -17,13 +17,28 @@ Allow 6 GiB for the container and disk space for the image and growing data
 volume. Ports `5174` for Web and `4318` for OTLP/HTTP bind to loopback. Choose
 unused ports if another service already uses either one.
 
-From the installed Skill, set `AIV_SKILL_DIR` to the absolute path of its
-`aivision-deploy` directory. For an online install, authenticate `gh` on
-`github.com` with an account that can read the private `ob-labs/ai-vision-skills`
-repository. The installer finds a published All-in-One preview, then verifies
-the selected manifest and archive before loading the image. Show the tag before
-installation and pin it for the operation. Without `--tag`, the installer uses
-the most recently published compatible preview.
+### Run the installer directly
+
+Authenticate `gh` on `github.com` with an account that can read the private
+`ob-labs/ai-vision-skills` repository. From an empty directory, set `preview_tag`
+to the exact tag from the [All-in-One preview Release](https://github.com/ob-labs/ai-vision-skills/releases).
+Download that release's installer and checksum, then run it. Check that the
+selected release offers the format and sample features you want to use.
+
+```sh
+: "${preview_tag:?Set this to the All-in-One preview tag}"
+gh release download "$preview_tag" --repo ob-labs/ai-vision-skills \
+  --pattern install-all-in-one.py --pattern SHA256SUMS &&
+  (grep -E '^[0-9a-f]{64}  install-all-in-one\.py$' SHA256SUMS | sha256sum --check) &&
+  python3 ./install-all-in-one.py --tag "$preview_tag"
+```
+
+### Install with a coding Agent
+
+From the installed `aivision-deploy` Skill, set `AIV_SKILL_DIR` to the absolute
+path of that directory. Use the same `gh` access. Resolve and display the tag
+before installing. Without `--tag`, the installer uses the most recently
+published compatible preview.
 
 ```sh
 : "${AIV_SKILL_DIR:?Set this to the installed aivision-deploy directory}"
@@ -33,21 +48,30 @@ preview_tag=$(python3 "$installer" --resolve) &&
   python3 "$installer" --tag "$preview_tag"
 ```
 
-Keep `preview_tag` for retries and recreation. For an explicit version, use
-its exact published tag. The preview uses private Release assets and loads
-the verified archive into Docker. It needs no container-registry login,
-`aiv cast`, or separate database image. A missing compatible release or a
-failed verification stops installation.
+Keep `preview_tag` for retries and recreation. The installer checks the Docker
+daemon, instance name and local ports before downloading. It verifies the
+selected archive and loads it into Docker. This installation uses Release
+assets and embedded seekdb.
+
+On Docker Server 23 or later, the installer prefers a verified `.tar.zst`
+image archive when the selected preview offers it. Older servers and older
+previews can use `.tar.gz`. Set `--archive-format gzip` to request gzip
+explicitly. The online installer caches verified downloads under
+`${XDG_CACHE_HOME:-$HOME/.cache}/aivision/all-in-one` and reuses an exact image
+already loaded in Docker on `auto`. Cache files can be removed when no install
+is running. The named data volume is separate from this cache.
+
+### Install offline
 
 For a local or offline install, transfer the complete verified candidate or the
 matching [private Release](https://github.com/ob-labs/ai-vision-skills/releases)
 assets into a single directory. Both architectures need `install-all-in-one.py`
 and `SHA256SUMS`.
 
-| Docker host | Additional assets |
-|---|---|
-| Linux x86-64 | `all-in-one-manifest.json`, `aiv-all-in-one-linux-amd64.tar.gz`, `aiv-linux-x64.tar.gz` when included |
-| Linux ARM64 | `all-in-one-manifest-arm64.json`, `aiv-all-in-one-linux-arm64.tar.gz`, `aiv-linux-arm64.tar.gz` |
+| Docker host | Manifest | Choose one image archive | CLI |
+|---|---|---|---|
+| Linux x86-64 | `all-in-one-manifest.json` | `aiv-all-in-one-linux-amd64.tar.zst` or `.tar.gz` | `aiv-linux-x64.tar.gz` when included |
+| Linux ARM64 | `all-in-one-manifest-arm64.json` | `aiv-all-in-one-linux-arm64.tar.zst` or `.tar.gz` | `aiv-linux-arm64.tar.gz` |
 
 Verify the files before running the installer. This path works without `gh` on
 the Docker host. If an authorized Release contains both architectures and you
@@ -76,6 +100,30 @@ ssh -N -o ExitOnForwardFailure=yes \
   user@linux-vm
 ```
 
+## View a sample Trace
+
+If the installed preview includes `sample-trace.py`, register in the Web UI
+and run its installer once more with `--sample-trace` in a terminal on the
+Linux Docker host. This creates a small synthetic Trace to explore the UI and
+makes zero model calls. Continue to Agent onboarding below if your preview
+does not include the sample helper.
+
+```sh
+python3 ./install-all-in-one.py --sample-trace
+```
+
+If you installed from a Skill, run its copy of the installer. Use the same
+`--name` for a custom instance. The installer reads its existing ports, then
+uses the matching release's sample helper. For an offline install, include
+`sample-trace.py` from that release and add `--from-dir "$PWD"`.
+
+Enter the existing local AI Vision account's email and password at the
+prompt. The terminal hides the password. Open the returned Trace link in the
+browser while signed in to the same account. The Trace appears under the
+sample space and Agent and is labeled as synthetic. On a VM, keep the Web
+port forwarded while opening the link. AgentLens remains available for rule
+diagnosis. Connect your own Agent below when you want to see its telemetry.
+
 ## Connect an Agent and find its Trace
 
 Run `getconf GNU_LIBC_VERSION` on the Linux Agent machine and require glibc
@@ -95,9 +143,8 @@ client OS, check the published backend and client combination in the
    base release's verified x86-64 CLI.
 
    ```sh
-   : "${AIV_SKILL_DIR:?Set this to the installed aivision-deploy directory}"
    : "${preview_tag:?Set this to the exact All-in-One preview tag}"
-   installer="$AIV_SKILL_DIR/scripts/install-all-in-one.py"
+   installer=./install-all-in-one.py
    python3 "$installer" --tag "$preview_tag" --resolve-cli &&
      python3 "$installer" --tag "$preview_tag" --install-cli
    ```

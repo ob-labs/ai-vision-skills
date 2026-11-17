@@ -5,11 +5,14 @@ import argparse
 from contextlib import nullcontext
 import hashlib
 import json
+import os
 from pathlib import Path
 import platform
 import re
 import shutil
+import socket
 import subprocess
+import sys
 import tarfile
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 import time
@@ -29,6 +32,7 @@ ASSETS = {
 ELF_MACHINES = {"linux/amd64": 62, "linux/arm64": 183}
 SHA256 = re.compile(r"[a-f0-9]{64}")
 SUMS = "SHA256SUMS"
+SAMPLE = "sample-trace.py"
 OWNER = "io.aivision.all-in-one.instance"
 RELEASE = "io.aivision.all-in-one.release"
 
@@ -132,6 +136,14 @@ def read_manifest(folder, selected, target):
     ):
         raise ValueError("The manifest does not describe the selected All-in-One preview.")
 
+    zstd_fields = {"zstd_archive", "zstd_archive_bytes", "zstd_archive_sha256"}
+    if zstd_fields.intersection(manifest) and (
+        manifest.get("zstd_archive") != archive[:-2] + "zst"
+        or not require_size(manifest.get("zstd_archive_bytes"))
+        or not SHA256.fullmatch(manifest.get("zstd_archive_sha256", ""))
+    ):
+        raise ValueError("The manifest has an invalid zstd image archive.")
+
     if target == "linux/arm64" or "agent_cli" in manifest:
         client = manifest.get("agent_cli")
         if (
@@ -146,13 +158,49 @@ def read_manifest(folder, selected, target):
     return manifest
 
 
-def verify_package(folder, selected, target):
-    manifest = read_manifest(folder, selected, target)
-    verify_file(folder / manifest["archive"], manifest["archive_sha256"], manifest["archive_bytes"])
+def verify_client_archive(folder, manifest):
     if "agent_cli" in manifest:
         client = manifest["agent_cli"]
         verify_file(folder / client["archive"], client["archive_sha256"], client["archive_bytes"])
-    return manifest
+
+
+def image_archive(folder, manifest, assets, requested, zstd_supported):
+    zstd_name = manifest.get("zstd_archive")
+    zstd_available = bool(zstd_name) and (zstd_name in assets if assets is not None else (folder / zstd_name).is_file())
+    if requested == "zstd" and not zstd_supported:
+        raise ValueError("This Docker server version is outside the zstd support threshold. Use gzip.")
+    if requested == "zstd" and not zstd_available:
+        raise ValueError("This preview has no zstd archive available for the selected architecture.")
+    prefix = "zstd_" if requested != "gzip" and zstd_supported and zstd_available else ""
+    name, digest, size = (manifest[prefix + field] for field in ("archive", "archive_sha256", "archive_bytes"))
+    if assets is not None:
+        verify_asset_metadata(assets, name, digest, size)
+    else:
+        if sum_for(folder, name) != digest:
+            raise ValueError(f"The checksum for {name} differs from the manifest.")
+        verify_file(folder / name, digest, size)
+    return name, digest, size
+
+
+def cached_image_archive(cache_dir, tag, name, digest, size):
+    directory = cache_dir.expanduser() / digest
+    archive = directory / name
+    if archive.is_file():
+        try:
+            verify_file(archive, digest, size)
+        except ValueError:
+            print(f"Cached {name} failed verification; downloading a fresh copy.", flush=True)
+        else:
+            print(f"Using verified cached archive {name}.", flush=True)
+            return archive
+    directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+    print(f"Downloading {tag}: {name} ({size} bytes)...", flush=True)
+    with TemporaryDirectory(dir=directory) as staging:
+        folder = Path(staging)
+        download(folder, tag, name)
+        verify_file(folder / name, digest, size)
+        (folder / name).replace(archive)
+    return archive
 
 
 def preview_manifest(folder, tag, target):
@@ -257,27 +305,57 @@ def prepare_resource(kind, resource, labels):
         verify_resource(kind, resource, labels)
 
 
-def install(args, folder, manifest):
-    name = args.name
-    network, volume = name + "-network", name + "-data"
-    target = manifest["platform"]
-    docker_system, _, docker_architecture = output("docker", "info", "--format", "{{.OSType}}/{{.Architecture}}").partition("/")
+def preflight(args, target):
+    info = output("docker", "info", "--format", "{{.OSType}}/{{.Architecture}}")
+    docker_system, _, docker_architecture = info.partition("/")
     if linux_platform(docker_system, docker_architecture) != target:
         raise ValueError(f"A matching local {target} Docker daemon is required.")
-    if name in output("docker", "container", "ls", "--all", "--format", "{{.Names}}").splitlines():
-        raise ValueError(f"Container {name} already exists. Follow the same-version recreation steps to reuse its data.")
+    if args.name in output("docker", "container", "ls", "--all", "--format", "{{.Names}}").splitlines():
+        raise ValueError(f"Container {args.name} already exists. Follow the same-version recreation steps to reuse its data.")
+    for port in (args.web_port, args.otlp_port):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+            listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            try:
+                listener.bind(("127.0.0.1", port))
+                listener.listen(1)
+            except OSError as error:
+                raise ValueError(f"Cannot bind local port {port}: {error}. Choose an available port.") from error
+    version = output("docker", "version", "--format", "{{.Server.Version}}")
+    major = re.match(r"^(\d+)\.", version)
+    return major is not None and int(major[1]) >= 23
+
+
+def local_image(manifest):
+    image_tag = manifest["image_tag"]
+    known_tags = output("docker", "image", "ls", "--format", "{{.Repository}}:{{.Tag}}").splitlines()
+    if image_tag not in known_tags:
+        return False
+    image_ref = "{{.Id}} {{.Os}}/{{.Architecture}}"
+    if output("docker", "image", "inspect", "--format", image_ref, image_tag) != f"{manifest['image_id']} {manifest['platform']}":
+        raise ValueError(f"Docker image tag {image_tag} already points to different bytes.")
+    return True
+
+
+def check_resources(name, manifest):
     network_labels = {OWNER: name}
     volume_labels = {OWNER: name, RELEASE: manifest["release_tag"]}
-    verify_resource("network", network, network_labels)
-    verify_resource("volume", volume, volume_labels)
+    verify_resource("network", name + "-network", network_labels)
+    verify_resource("volume", name + "-data", volume_labels)
+    return network_labels, volume_labels
+
+
+def install(args, manifest, archive, labels):
+    name = args.name
+    network, volume = name + "-network", name + "-data"
+    network_labels, volume_labels = labels
+    target = manifest["platform"]
 
     image = manifest["image_id"]
     image_tag = manifest["image_tag"]
     image_ref = "{{.Id}} {{.Os}}/{{.Architecture}}"
-    known_tags = output("docker", "image", "ls", "--format", "{{.Repository}}:{{.Tag}}").splitlines()
-    if image_tag in known_tags and output("docker", "image", "inspect", "--format", image_ref, image_tag) != f"{image} {target}":
-        raise ValueError(f"Docker image tag {image_tag} already points to different bytes.")
-    subprocess.run(["docker", "load", "--input", str(folder / manifest["archive"])], check=True)
+    if archive is not None:
+        print(f"Loading {archive.name} into Docker...", flush=True)
+        subprocess.run(["docker", "load", "--input", str(archive)], check=True)
     if output("docker", "image", "inspect", "--format", image_ref, image_tag) != f"{image} {target}":
         raise ValueError("The loaded Docker image does not match the manifest identity and platform.")
 
@@ -313,7 +391,66 @@ def install(args, folder, manifest):
             print(f"Image: {image}. Persistent Docker volume: {volume}.")
             return
         time.sleep(3)
-    raise ValueError(f"{name} did not become ready. Inspect with docker logs {name}.")
+    raise ValueError(f"{name} did not become ready. Inspect with docker logs {name}. "
+                     f"The container and {volume} were retained for troubleshooting.")
+
+
+def deploy(args, folder, tag, manifest, assets, zstd_supported):
+    labels = check_resources(args.name, manifest)
+    loaded = local_image(manifest)
+    if tag and "agent_cli" in manifest:
+        client = manifest["agent_cli"]
+        verify_asset_metadata(assets, client["archive"], client["archive_sha256"], client["archive_bytes"])
+        download(folder, tag, client["archive"])
+    verify_client_archive(folder, manifest)
+    archive = None
+    if not loaded or args.archive_format != "auto" or tag is None:
+        selected = image_archive(folder, manifest, assets if tag else None, args.archive_format, zstd_supported)
+        archive = cached_image_archive(args.cache_dir, tag, *selected) if tag else folder / selected[0]
+    else:
+        print(f"Using verified local image {manifest['image_id']}.", flush=True)
+    install(args, manifest, archive, labels)
+
+
+def sample_instance(name):
+    template = '{{json .Config.Labels}}\n{{json .State.Health.Status}}\n{{json .NetworkSettings.Ports}}\n{{json .Mounts}}'
+    labels, health, published, mounts = (json.loads(part) for part in output("docker", "inspect", "--format", template, name).splitlines())
+    volume = name + "-data"
+    if labels.get(OWNER) != name or health != "healthy" or not any(
+        mount["Type"] == "volume" and mount["Name"] == volume and mount["Destination"] == "/data" for mount in mounts
+    ):
+        raise ValueError(f"{name} is not a healthy All-in-One container with its named data volume.")
+    volume_labels = json.loads(output("docker", "volume", "inspect", "--format", "{{json .Labels}}", volume))
+    tag = volume_labels.get(RELEASE, "")
+    if volume_labels.get(OWNER) != name or not TAG.fullmatch(tag):
+        raise ValueError(f"Docker volume {volume} does not identify the installed preview.")
+    ports = []
+    for container_port in ("5174/tcp", "4318/tcp"):
+        bindings = [int(entry["HostPort"]) for entry in (published.get(container_port) or [])
+                    if entry["HostIp"] == "127.0.0.1"]
+        if len(bindings) != 1:
+            raise ValueError(f"{name} must publish {container_port} on one local IPv4 port.")
+        ports.extend(bindings)
+    return tag, ports
+
+
+def sample_trace(args, target):
+    tag, (web_port, otlp_port) = sample_instance(args.name)
+    if args.tag and args.tag != tag:
+        raise ValueError(f"{args.name} uses {tag}. Select that exact preview for its sample Trace.")
+    with (nullcontext(args.from_dir) if args.from_dir else TemporaryDirectory(prefix="aiv-sample-trace-")) as directory:
+        folder = Path(directory).resolve()
+        if args.from_dir:
+            if preview_manifest(folder, None, target)[0]["release_tag"] != tag:
+                raise ValueError(f"The local bundle does not match {args.name}'s preview {tag}.")
+            verify_file(folder / SAMPLE, sum_for(folder, SAMPLE))
+        else:
+            assets = published_assets(tag)
+            digest, size = asset_identity(assets, SAMPLE)
+            download(folder, tag, SAMPLE)
+            verify_file(folder / SAMPLE, digest, size)
+        subprocess.run([sys.executable, str(folder / SAMPLE), "--web-port", str(web_port),
+                        "--otlp-port", str(otlp_port)], check=True)
 
 
 def main():
@@ -325,7 +462,12 @@ def main():
     operation.add_argument("--resolve", action="store_true", help="Print the compatible published preview tag.")
     operation.add_argument("--resolve-cli", action="store_true", help="Print the matching Agent CLI selection as JSON.")
     operation.add_argument("--install-cli", action="store_true", help="Install the matching Agent CLI without Docker.")
+    operation.add_argument("--sample-trace", action="store_true", help="Send a synthetic Trace to a running local instance.")
     parser.add_argument("--install-dir", type=Path, default=Path("~/.local/bin"), help="Directory for --install-cli.")
+    parser.add_argument("--archive-format", choices=("auto", "gzip", "zstd"), default="auto",
+                        help="Image archive format. Auto prefers zstd on compatible Docker servers.")
+    parser.add_argument("--cache-dir", type=Path, default=Path(os.environ.get("XDG_CACHE_HOME") or "~/.cache") / "aivision/all-in-one",
+                        help="Location of verified image downloads.")
     parser.add_argument("--name", default="aiv-all-in-one", help="Docker resource name prefix.")
     parser.add_argument("--web-port", type=int, default=5174)
     parser.add_argument("--otlp-port", type=int, default=4318)
@@ -344,6 +486,11 @@ def main():
         if len(ports) != 2 or min(ports) < 1 or max(ports) > 65535 or args.timeout < 1:
             raise ValueError("Specify distinct TCP ports in 1–65535 and a positive readiness timeout.")
 
+        if args.sample_trace:
+            sample_trace(args, target)
+            return 0
+        deploying = not (args.resolve or args.resolve_cli or args.install_cli)
+        zstd_supported = preflight(args, target) if deploying else False
         tag = None if args.from_dir else resolve_release(args.tag, target)
         if args.resolve:
             print(tag)
@@ -358,18 +505,7 @@ def main():
                 else:
                     install_cli(folder, selection, args.install_dir, tag is not None)
                 return 0
-            if tag:
-                print(f"Downloading {tag}...", flush=True)
-                archive = manifest["archive"]
-                verify_asset_metadata(assets, archive, manifest["archive_sha256"], manifest["archive_bytes"])
-                names = [archive]
-                if "agent_cli" in manifest:
-                    client = manifest["agent_cli"]
-                    verify_asset_metadata(assets, client["archive"], client["archive_sha256"], client["archive_bytes"])
-                    names.append(client["archive"])
-                download(folder, tag, *names)
-            manifest = verify_package(folder, tag, target)
-            install(args, folder, manifest)
+            deploy(args, folder, tag, manifest, assets, zstd_supported)
     except (OSError, ValueError, KeyError, TypeError, AttributeError, tarfile.TarError, subprocess.CalledProcessError) as error:
         parser.exit(1, f"All-in-One installation failed: {error}\n")
     return 0
