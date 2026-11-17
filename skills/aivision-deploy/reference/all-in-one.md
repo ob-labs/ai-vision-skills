@@ -27,10 +27,11 @@ selected release offers the format and sample features you want to use.
 
 ```sh
 : "${preview_tag:?Set this to the All-in-One preview tag}"
+installer=./install-all-in-one.py
 gh release download "$preview_tag" --repo ob-labs/ai-vision-skills \
   --pattern install-all-in-one.py --pattern SHA256SUMS &&
   (grep -E '^[0-9a-f]{64}  install-all-in-one\.py$' SHA256SUMS | sha256sum --check) &&
-  python3 ./install-all-in-one.py --tag "$preview_tag"
+  python3 "$installer" --tag "$preview_tag"
 ```
 
 ### Install with a coding Agent
@@ -55,8 +56,9 @@ assets and embedded seekdb.
 
 On Docker Server 23 or later, the installer prefers a verified `.tar.zst`
 image archive when the selected preview offers it. Older servers and older
-previews can use `.tar.gz`. Set `--archive-format gzip` to request gzip
-explicitly. The online installer caches verified downloads under
+previews can use `.tar.gz`. With a dual-format installer, set
+`--archive-format gzip` to request gzip explicitly. The online installer
+caches verified downloads under
 `${XDG_CACHE_HOME:-$HOME/.cache}/aivision/all-in-one` and reuses an exact image
 already loaded in Docker on `auto`. Cache files can be removed when no install
 is running. The named data volume is separate from this cache.
@@ -108,13 +110,15 @@ Linux Docker host. This creates a small synthetic Trace to explore the UI and
 makes zero model calls. Continue to Agent onboarding below if your preview
 does not include the sample helper.
 
+Use the installer path from the installation step. If you opened a new shell
+after installing from the Skill, set `installer` to the Skill's script again.
+
 ```sh
-python3 ./install-all-in-one.py --sample-trace
+python3 "${installer:-./install-all-in-one.py}" --sample-trace
 ```
 
-If you installed from a Skill, run its copy of the installer. Use the same
-`--name` for a custom instance. The installer reads its existing ports, then
-uses the matching release's sample helper. For an offline install, include
+Use the same `--name` for a custom instance. The installer reads its existing
+ports, then uses the matching release's sample helper. For an offline install, include
 `sample-trace.py` from that release and add `--from-dir "$PWD"`.
 
 Enter the existing local AI Vision account's email and password at the
@@ -134,9 +138,9 @@ client OS, check the published backend and client combination in the
 [distributed guide](prerequisites.md#select-the-agent-client-backend-configuration).
 
 1. Install or reuse the matching Linux `aiv` on the Agent machine. Copy the
-   All-in-One installer there, or use the copy in the installed `aivision-deploy`
-   Skill. Use the exact `preview_tag` that installed the platform. The
-   installer selects the matching CLI for the Agent machine, verifies its
+   All-in-One installer there, or set `installer` to the script in the locally
+   installed `aivision-deploy` Skill. Use the exact `preview_tag` that installed
+   the platform. The installer selects the matching CLI for the Agent machine, verifies its
    SHA-256, architecture and version, and installs it to `~/.local/bin/aiv`.
    It uses the preview's own CLI archive when included. For an older x86-64
    preview that lists a base release, the online installer finds that exact
@@ -144,7 +148,7 @@ client OS, check the published backend and client combination in the
 
    ```sh
    : "${preview_tag:?Set this to the exact All-in-One preview tag}"
-   installer=./install-all-in-one.py
+   installer="${installer:-./install-all-in-one.py}"
    python3 "$installer" --tag "$preview_tag" --resolve-cli &&
      python3 "$installer" --tag "$preview_tag" --install-cli
    ```
