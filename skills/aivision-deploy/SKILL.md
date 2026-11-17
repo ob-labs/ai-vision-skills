@@ -14,7 +14,7 @@ deployment requires neither a product checkout nor private source-document acces
 
 | Situation | Start here |
 |---|---|
-| First try or personal use on a Linux x86-64 or ARM64 Docker host | Recommend [All-in-One Preview](reference/all-in-one.md) when a verified bundle matches the host. One container includes the platform and embedded seekdb, with data in one named Docker volume. Follow that guide through Agent onboarding and Trace verification. |
+| First try or personal use on a Linux x86-64 or ARM64 Docker host | Recommend [All-in-One Preview](reference/all-in-one.md) when a verified bundle matches the host. One container includes the platform and embedded seekdb, with data in one named Docker volume. Offer the sample Trace after sign-up if the selected release includes it, then guide Agent onboarding when requested. |
 | New shared deployment, an external database, or an explicit distributed Docker, Compose or Kubernetes target | Follow the distributed deployment below, including its supported platforms and datastore choices. |
 | Existing instance | Keep its mode, datastore and identity. Use the [All-in-One operations guide](reference/all-in-one.md#stop-restart-or-recreate) for an existing preview or the [distributed upgrade workflow](reference/upgrade.md) for an existing distributed installation. |
 

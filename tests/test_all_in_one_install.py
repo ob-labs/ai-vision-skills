@@ -92,9 +92,27 @@ class PlatformTests(unittest.TestCase):
             installer.subprocess, "run",
         ) as run:
             with self.assertRaisesRegex(ValueError, "matching local linux/arm64 Docker daemon"):
-                installer.install(SimpleNamespace(name="aiv-trial"), Path("."), {"platform": ARM64})
+                installer.preflight(SimpleNamespace(name="aiv-trial"), ARM64)
         output.assert_called_once_with("docker", "info", "--format", "{{.OSType}}/{{.Architecture}}")
         run.assert_not_called()
+
+    def test_local_port_conflict_is_reported_before_archive_work(self):
+        args = SimpleNamespace(name="aiv-trial", web_port=5174, otlp_port=4318)
+        with patch.object(installer, "output", side_effect=["linux/aarch64", ""]) as docker, patch.object(
+            installer.socket, "socket",
+        ) as socket:
+            socket.return_value.__enter__.return_value.bind.side_effect = OSError("in use")
+            with self.assertRaisesRegex(ValueError, "Cannot bind local port 5174"):
+                installer.preflight(args, ARM64)
+            self.assertEqual(docker.call_count, 2)
+
+    def test_docker_server_version_controls_compression(self):
+        args = SimpleNamespace(name="aiv-trial", web_port=5174, otlp_port=4318)
+        for version, expected in (("26.1.3", True), ("23.0.0", True), ("20.10.24", False), ("unknown", False)):
+            with self.subTest(version=version), patch.object(
+                installer, "output", side_effect=["linux/amd64", "", version],
+            ), patch.object(installer.socket, "socket"):
+                self.assertEqual(installer.preflight(args, AMD64), expected)
 
 
 class PackageTests(unittest.TestCase):
@@ -118,16 +136,18 @@ class PackageTests(unittest.TestCase):
             "image_tag": "aiv-all-in-one:fixture-amd64",
         }
         (self.folder / AMD64_MANIFEST).write_text(json.dumps(self.manifest), encoding="utf-8")
+        (self.folder / installer.SUMS).write_text(f"{self.manifest['archive_sha256']}  {AMD64_ARCHIVE}\n")
 
     def test_verified_package_keeps_the_image_identity_and_base_release(self):
-        self.assertEqual(installer.verify_package(self.folder, LATEST, AMD64), self.manifest)
+        self.assertEqual(installer.read_manifest(self.folder, LATEST, AMD64), self.manifest)
+        self.assertEqual(installer.image_archive(self.folder, self.manifest, None, "auto", True)[0], AMD64_ARCHIVE)
 
     def test_rejects_wrong_pinned_release_and_changed_archive(self):
         with self.assertRaisesRegex(ValueError, "selected All-in-One preview"):
-            installer.verify_package(self.folder, EARLY, AMD64)
+            installer.read_manifest(self.folder, EARLY, AMD64)
         self.archive.write_bytes(b"X" * self.manifest["archive_bytes"])
         with self.assertRaisesRegex(ValueError, "tar.gz SHA-256"):
-            installer.verify_package(self.folder, LATEST, AMD64)
+            installer.image_archive(self.folder, self.manifest, None, "auto", True)
 
     def test_arm64_requires_a_matching_verified_cli_and_its_own_image(self):
         cli = self.folder / ARM64_CLI
@@ -146,18 +166,70 @@ class PackageTests(unittest.TestCase):
             },
         }
         manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
-        self.assertEqual(installer.verify_package(self.folder, ARM_LATEST, ARM64), manifest)
+        self.assertEqual(installer.read_manifest(self.folder, ARM_LATEST, ARM64), manifest)
+        installer.verify_client_archive(self.folder, manifest)
         cli.write_bytes(b"X" * len(content))
         with self.assertRaisesRegex(ValueError, "aiv-linux-arm64.tar.gz SHA-256"):
-            installer.verify_package(self.folder, ARM_LATEST, ARM64)
+            installer.verify_client_archive(self.folder, manifest)
         manifest["agent_cli"]["version"] = "0.1.0-daily.20261112"
         manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "matching Agent CLI"):
-            installer.verify_package(self.folder, ARM_LATEST, ARM64)
+            installer.read_manifest(self.folder, ARM_LATEST, ARM64)
         manifest["platform"] = AMD64
         manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "selected All-in-One preview"):
-            installer.verify_package(self.folder, ARM_LATEST, ARM64)
+            installer.read_manifest(self.folder, ARM_LATEST, ARM64)
+
+    def test_zstd_preferred_for_modern_docker_with_usable_archive(self):
+        zstd = Path(AMD64_ARCHIVE).with_suffix(".zst").name
+        data = b"zstd fixture"
+        (self.folder / zstd).write_bytes(data)
+        digest = hashlib.sha256(data).hexdigest()
+        manifest = {**self.manifest, "zstd_archive": zstd, "zstd_archive_sha256": digest, "zstd_archive_bytes": len(data)}
+        (self.folder / AMD64_MANIFEST).write_text(json.dumps(manifest), encoding="utf-8")
+        self.assertEqual(installer.read_manifest(self.folder, LATEST, AMD64), manifest)
+        with (self.folder / installer.SUMS).open("a", encoding="ascii") as checksums:
+            checksums.write(f"{digest}  {zstd}\n")
+        self.assertEqual(installer.image_archive(self.folder, manifest, None, "auto", True)[0], zstd)
+        self.assertEqual(installer.image_archive(self.folder, manifest, None, "gzip", True)[0], AMD64_ARCHIVE)
+        self.assertEqual(installer.image_archive(self.folder, manifest, None, "auto", False)[0], AMD64_ARCHIVE)
+        with self.assertRaisesRegex(ValueError, "outside the zstd support threshold"):
+            installer.image_archive(self.folder, manifest, None, "zstd", False)
+        (self.folder / zstd).unlink()
+        self.assertEqual(installer.image_archive(self.folder, manifest, None, "auto", True)[0], AMD64_ARCHIVE)
+        with self.assertRaisesRegex(ValueError, "no zstd archive available"):
+            installer.image_archive(self.folder, manifest, None, "zstd", True)
+
+    def test_partial_or_wrong_architecture_zstd_manifest_is_rejected(self):
+        wrong = {**self.manifest, "zstd_archive": "aiv-all-in-one-linux-arm64.tar.zst"}
+        (self.folder / AMD64_MANIFEST).write_text(json.dumps(wrong), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "invalid zstd image archive"):
+            installer.read_manifest(self.folder, LATEST, AMD64)
+
+    def test_zstd_authenticated_identity_checked_before_download(self):
+        name = "aiv-all-in-one-linux-amd64.tar.zst"
+        manifest = {**self.manifest, "zstd_archive": name, "zstd_archive_sha256": "a" * 64, "zstd_archive_bytes": 25}
+        assets = {name: {"digest": "sha256:" + "b" * 64, "size": 25}}
+        with self.assertRaisesRegex(ValueError, "differs from the manifest"):
+            installer.image_archive(self.folder, manifest, assets, "auto", True)
+
+    def test_corrupt_cache_is_replaced_and_verified_cache_is_reused(self):
+        data = self.archive.read_bytes()
+        name, digest, size = (self.manifest[field] for field in ("archive", "archive_sha256", "archive_bytes"))
+        cache = self.folder / "cache"
+        cached = cache / digest / name
+        cached.parent.mkdir(parents=True)
+        cached.write_bytes(b"X" * size)
+
+        def download(folder, tag, requested):
+            self.assertEqual((tag, requested), (LATEST, name))
+            (folder / requested).write_bytes(data)
+
+        with patch.object(installer, "download", side_effect=download) as fetch:
+            self.assertEqual(installer.cached_image_archive(cache, LATEST, name, digest, size), cached)
+            self.assertEqual(installer.cached_image_archive(cache, LATEST, name, digest, size), cached)
+        self.assertEqual(fetch.call_count, 1)
+        self.assertEqual(cached.read_bytes(), data)
 
 
 class CliTests(unittest.TestCase):
@@ -256,3 +328,28 @@ class VolumeTests(unittest.TestCase):
                 else:
                     with self.assertRaisesRegex(ValueError, message):
                         installer.verify_resource("volume", "aiv-trial-data", expected)
+
+
+class SampleTraceTests(unittest.TestCase):
+    def test_sample_uses_owned_instance_ports_and_volume_release(self):
+        labels = {installer.OWNER: "aiv-trial"}
+        ports = {"5174/tcp": [{"HostIp": "127.0.0.1", "HostPort": "55174"}],
+                 "4318/tcp": [{"HostIp": "127.0.0.1", "HostPort": "54318"}]}
+        mounts = [{"Type": "volume", "Name": "aiv-trial-data", "Destination": "/data"}]
+        response = "\n".join(json.dumps(part) for part in (labels, "healthy", ports, mounts))
+        volume = json.dumps({**labels, installer.RELEASE: LATEST})
+        with patch.object(installer, "output", side_effect=[response, volume]):
+            self.assertEqual(installer.sample_instance("aiv-trial"), (LATEST, [55174, 54318]))
+        with patch.object(installer, "output", return_value=response) as inspect:
+            with self.assertRaisesRegex(ValueError, "not a healthy All-in-One container"):
+                installer.sample_instance("another-installation")
+            inspect.assert_called_once()
+
+    def test_sample_online_requires_the_running_instances_pinned_release(self):
+        args = SimpleNamespace(name="aiv-trial", tag=EARLY, from_dir=None)
+        with patch.object(installer, "sample_instance", return_value=(LATEST, [55174, 54318])), patch.object(
+            installer, "published_assets",
+        ) as published:
+            with self.assertRaisesRegex(ValueError, "Select that exact preview"):
+                installer.sample_trace(args, AMD64)
+            published.assert_not_called()
