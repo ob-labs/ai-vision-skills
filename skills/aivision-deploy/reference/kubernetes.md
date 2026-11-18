@@ -52,7 +52,7 @@ before either branch, including making the installed command available on `PATH`
 This path targets a **Linux** host:
 
 - `aiv` and `kubectl` installed; Docker is needed only to create a local kind
-  cluster, and `gh` only for restricted release downloads
+  cluster, and `curl` and `jq` for public Release discovery and downloads
 - a cluster with at least **4 CPU / 16Gi** RAM, **~140Gi** disk, **Kubernetes
   1.33–1.36**, admin rights and a default StorageClass
 - Web and OTLP HTTP share the configured public Ingress address; the local
@@ -110,25 +110,18 @@ manifest is required for that local validation.
 
 For published builds, choose Release or Daily using the [shared channel flow](../SKILL.md#choose-release-or-daily)
 and download the [matching CLI and verified manifest](prerequisites.md#resolve-the-version-and-download-matching-assets).
-For restricted Daily, select a published base `delivery-v<product-version>`
-prerelease whose manifest includes `linux/amd64`. Verify the workloads can run
-on Linux x86 nodes in the intended cluster. For a stable Release, use its
-published platform coverage. Preserve the cluster context and namespace.
-Use the base CE vars for the fixed Kubernetes path. Apply Agent-client preview
-vars only if their Release documents Kubernetes support for that base.
-Docker smoke and OCI architecture availability are separate from Kubernetes
-acceptance. If the selected release lacks required assets or platform support,
-resolve a compatible release before deployment.
+Check the release's OCI image platforms against the nodes where the workloads
+can run, and preserve the cluster context and namespace. Use the CE vars for the
+fixed Kubernetes path. Docker smoke and OCI architecture availability are
+separate from Kubernetes acceptance. If the selected release lacks a required
+asset or platform, resolve a compatible release before deployment.
 Copy `SIGNOZ_IMAGE`, `GATEWAY_IMAGE`, `BE_IMAGE`, `AGENTLENS_IMAGE`, `FE_IMAGE`
 and `AIVISION_RELEASE_MANIFEST_BASE64` from its verified CE vars asset into one private
 `aivision.k8s.vars.yaml`, retaining existing Kubernetes settings. These digest
 references pin all five bundled services, including SigNoz. The release metadata
 key supplies the installed product version to About without rewriting original
 component build information.
-For restricted Daily, service digest references come from the manifest under
-`ghcr.io/ob-labs/ai-vision-skills/`; do not infer tags from the Release name.
-Keep `NATIVE_PYTHON_RUNTIME: "true"` from native vars when supported by the
-selected CLI's Kubernetes configuration, and verify support before deployment.
+Keep the product package digests recorded in the verified manifest.
 Do not copy Docker-only `OB_BACKEND` or its `OB_IMAGE`: Kubernetes uses its own
 Operator-compatible OceanBase image. Do not copy the Docker history-start or
 password keys, which this target does not accept. Keep the file outside source

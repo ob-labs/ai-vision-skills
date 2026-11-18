@@ -1,97 +1,78 @@
 # Installing the `aiv` CLI
 
-Reuse an installed compatible CLI, including when offline. On Linux or macOS,
-expose the permanent install directory in this terminal and check the executable
-and relevant command. Use the confirmed directory if the CLI is installed elsewhere.
+Reuse an installed compatible CLI. Verify its version and the command needed by
+the selected Skill in a fresh terminal.
 
 ```bash
-export PATH="$HOME/.local/bin:$PATH"
 command -v aiv
 aiv --version
-aiv query metadata --help
+aiv cast --help
 ```
 
-On Windows, use `Get-Command aiv` and run the same version and help commands in
-PowerShell. For a capability missing from the installed CLI, select a compatible
-release before changing the platform deployment or user profile.
+On Windows, use `Get-Command aiv` to inspect the installed executable.
 
 ## Discover a published CLI
 
-CLI delivery supports Linux x64, Apple Silicon, and Windows x64. Intel Mac,
-Linux ARM64, and Windows ARM64 delivery are paused. Selectors apply this scope
-to both channels and to explicit tags.
+The [product Releases](https://github.com/antgroup/ai-vision/releases) supply
+Stable `vMAJOR.MINOR.PATCH` and Daily `vMAJOR.MINOR.PATCH-daily.YYYYMMDD[.N]`
+assets. Stable is the default. Select Daily explicitly with `AIV_CHANNEL=daily`,
+or give `AIV_TAG` a full versioned Daily tag. The helper requires `curl` and
+`jq` and uses public HTTPS. GitHub CLI and an account token are unnecessary.
 
-Set `AIV_SKILL_DIR` to the installed directory of **this** Skill, which contains
-`SKILL.md` and `scripts/`. The [shell helper](../scripts/install-cli.sh) and
-[PowerShell helper](../scripts/install-cli.ps1) use the same
-[release selector](../scripts/discover-cli.jq). They require `gh` and `jq`.
-Authenticate `gh` to `github.com` with an account that can read the selected
-repository. Release access and image pull access are independent.
+The helper selects the newest compatible published version and requires its
+CLI archive, product manifest, checksums, and both database vars files. Its
+output includes the selected `tag`, `product_version`, and `cli_platform`.
+Check the platform separately on the deployment host and the Agent client.
+Stable and Daily downloads are limited to the assets offered by that release.
+Product Linux and macOS archives have x64 and ARM64 variants. A Windows x64
+installation requires `aiv-windows-x64.zip` from the same public release. Reuse
+an existing compatible Windows CLI if the release has no Windows archive.
 
-For **Daily**, discovery queries the private `ob-labs/ai-vision-skills` Releases
-API across all pages. It picks the highest numeric product version and update
-for the current client platform among compatible published prereleases. The result
-can be older than a Daily published for a different platform. **Stable** uses
-published stable `v` releases from `ob-labs/ai-vision-ob`; set `AIV_CHANNEL=stable`
-when that is the selected channel. An explicit `AIV_TAG` pins an exact release;
-set it before resolving if a deployment or upgrade requires a specific build.
-Discovery is read-only and uses no fixed default version or `releases/latest`.
-
-Read the returned JSON before proceeding. `tag` is the exact release for the CLI,
-`product_version` is the version printed by `aiv --version`, and `base_tag` is
-the corresponding base release. A base Daily can include Apple Silicon assets
-with `SHA256SUMS.macos`. For the same version, discovery prefers that layout.
-An older published macOS companion uses its own tag and `SHA256SUMS`. Both
-layouts verify the base relationship using the macOS release manifest. The
-client architecture is independent of the Docker host architecture. Use the
-matching platform and datastore variables from the verified deployment guide.
+Install only an exact published tag. When no compatible release is available,
+keep the existing CLI and report the missing platform or version. Workflow
+candidate artifacts and rolling aliases are separate from the versioned
+release selection.
 
 ### Linux and macOS
+
+Set `AIV_SKILL_DIR` to this installed Skill directory. Discovery chooses the
+Apple Silicon archive on a Mac running a Rosetta shell.
 
 ```bash
 : "${AIV_SKILL_DIR:?Set this to the installed Skill directory}"
 sh "$AIV_SKILL_DIR/scripts/install-cli.sh" --resolve
 ```
 
-Discovery uses the client machine's architecture. Apple Silicon selects the arm64
-archive even if its shell runs under Rosetta. Review the selected version against the installed CLI and the
-platform you intend to connect to. Set `AIV_TAG` to the exact returned `tag` for
-this installation or upgrade, and keep the same channel and repository settings.
+For Daily, set `AIV_CHANNEL=daily` for discovery. After checking the result, set
+`AIV_TAG` to its exact tag and install:
 
 ```bash
-: "${AIV_TAG:?Set this to the verified tag from discovery}"
+: "${AIV_TAG:?Set this to the verified versioned tag}"
 AIV_TAG="$AIV_TAG" sh "$AIV_SKILL_DIR/scripts/install-cli.sh" --install
 ```
 
-The helper rechecks the pinned release, validates downloaded assets against
-published SHA-256 values, and checks the executable version before replacing the
-permanent binary. The default is `~/.local/bin/aiv`; set `AIV_INSTALL_DIR` to
-keep an existing CLI's custom directory. A failed verification leaves the prior
-executable in place. Finish [durable PATH setup](path-setup.md) and verify the
-chosen binary in fresh interactive and login shells.
+The installer verifies the release metadata, product manifest, archive checksum,
+and `aiv --version` before replacing the executable in `~/.local/bin`. Set
+`AIV_INSTALL_DIR` to retain a custom install location. A failed check preserves
+any existing executable. Add the install directory to `PATH` using your shell startup file, then verify
+`command -v aiv` and `aiv --version` in a fresh terminal.
 
 ### Windows x64
 
-Run native PowerShell on Windows x64. The Daily route selects the published
-Windows preview when it includes the verified x64 ZIP and preview manifest. The
-helper validates the preview manifest and ZIP against authenticated GitHub asset
-digests. Stable ZIPs use the selected stable Release's checksums. Preview
-availability alone does not establish native Windows qualification.
+Run native PowerShell with `curl.exe` and `jq`. This path is available only when
+the public release includes the Windows archive.
 
 ```powershell
-if (-not $env:AIV_SKILL_DIR) { throw 'Set AIV_SKILL_DIR to the installed Skill directory.' }
+if (-not $env:AIV_SKILL_DIR) { throw 'Set AIV_SKILL_DIR to the installed Skill directory' }
 & "$env:AIV_SKILL_DIR/scripts/install-cli.ps1" -Mode Resolve
 ```
 
-Review the result, set `$env:AIV_TAG` to its exact `tag`, then run:
+Set `$env:AIV_TAG` to the exact returned tag before installing.
 
 ```powershell
 & "$env:AIV_SKILL_DIR/scripts/install-cli.ps1" -Mode Install
 ```
 
-The default is `%LOCALAPPDATA%\AI Vision\bin\aiv.exe`. Set `AIV_INSTALL_DIR`
-to preserve a custom path. Add that directory to the Windows user `Path` if
-needed. In a new PowerShell window, verify `Get-Command aiv`, `aiv --version`,
-and the required command help.
-
-An existing platform can be queried with its endpoint and SpaceKey. Docker, registry authentication, and local Agent hooks are separate operations.
+The default installation directory is `%LOCALAPPDATA%\AI Vision\bin`. To preserve
+a custom directory, set `AIV_INSTALL_DIR`. Add the selected directory to your
+user `Path` and run `Get-Command aiv` and `aiv --version` in a new terminal.

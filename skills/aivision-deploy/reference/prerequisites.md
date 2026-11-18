@@ -5,12 +5,8 @@ deployment target first, then check only the tools required for that target.
 The CLI is also usable manually; installing or deploying with `aiv` does not
 require this Skill.
 
-For the restricted native CLI profile, use default Docker or
-CLI-managed `--target compose` with matching native release variables. It rejects
-standalone `--compose-file`. The existing-file instructions below require an
-ordinary source CLI build; if upgrading such an installation, stop before
-replacing its CLI or changing its configuration or services. No automatic
-conversion is provided.
+An existing restricted native installation retains its original profile until an
+authorized upgrade. Follow the original release instructions for its lifecycle.
 
 ## Requirements by target
 
@@ -20,15 +16,14 @@ conversion is provided.
 | Docker Compose 2.27+ | Optional Compose on Linux/macOS; Go aiv controls native Compose without host Python or an extra control script. Keep complete matching deployment assets. |
 | Running Docker daemon | Docker deployment, or creating a local Kubernetes cluster with the Docker-backed kind recipe. An existing Kubernetes cluster does not require a local Docker daemon. |
 | `kubectl` and a prepared cluster | Kubernetes deployment. Confirm the actual context, permissions, StorageClass, and target resources in the [Kubernetes guide](https://aivision.mintlify.site/en/deployment/kubernetes). |
-| GitHub CLI (`gh`) and GitHub authentication | The bundled restricted-trial Release download procedure; the operator needs read access to the selected delivery repository. An already installed compatible CLI does not require downloading again. |
+| `curl` and `jq` | Discover and download a versioned public product Release. An already installed compatible CLI can be reused. |
 | Image registry authentication | Only for images that require it. GitHub Release access and container image access are separate permissions. |
 | CPU, memory, and storage | According to the selected target and datastore. Reusing OceanBase CE or seekdb removes the bundled datastore requirement, not the resources needed by the remaining services. |
 | Network access | Whenever CLI assets, images, or dependencies must be downloaded or refreshed, including retries and upgrades. Do not assume only the first `cast` needs network access. |
 
-Use the verified manifest for the selected release's server architecture and
-CLI availability. Native deployment sets `NATIVE_PYTHON_RUNTIME` and needs no
-user-installed Python. The Quickstart SDK demo and maintainer source builds
-have their own requirements.
+Use the verified manifest and Release notes to check the selected combination's
+image architectures and qualification. Check the deployment host and Agent
+client separately.
 
 A public image can remove the image-pull authentication step. It does not remove
 database, Kubernetes, TLS, or other credentials required by the chosen environment.
@@ -72,7 +67,7 @@ Do not infer CLI target support or image compatibility from OB_BACKEND, dev tags
 or source merges. The earlier controller matrix does not qualify the Go path;
 record exact new combinations. If the selected Release lacks the required
 capabilities, report the missing compatible Release. Image builds and publication
-are product-maintainer work outside the normal restricted-trial workflow.
+are product-maintainer work outside normal installation.
 
 The gateway's default `healthcheck` checks local pprof within two seconds.
 `healthcheck --ready` runs three checks, each with a two-second timeout, under
@@ -88,31 +83,17 @@ Source CLI builds additionally require Python 3 for the asset freshness check.
 After editing authoritative assets, run `make assets` in `aivision-cli/`, then
 `make build`; normal builds check the committed generated files without changing them.
 
-The restricted trial CLI has a native-only compile-time profile.
-A source-mode CLI with the same version text is not equivalent: install the
-checksummed archive from the selected private Release. The earlier `.20261028`
-CLI embeds Python deployment helpers and needs replacement for strict delivery.
-Native builds reject explicit source runtime/installer choices and standalone
-`--compose-file`; use CLI-managed `--target compose` with the native release vars.
+## Agent client runtime
 
-## Native Agent client runtime
+Verify that the selected deployment serves an installer for the Agent machine's
+OS and architecture. The standard source-compatible Agent path needs Python
+3.11 or newer on that machine. Existing authorized native previews retain their
+own host requirements. For a Linux x64 native preview, require glibc 2.35 or newer
+and verify it on the Agent machine with `getconf GNU_LIBC_VERSION`.
 
-Verify that the backend serves the native installer for the Agent machine's
-operating system and architecture. For Apple Silicon or Windows x64, use the
-matching CLI and [compatible preview backend](#select-the-agent-client-backend-configuration).
-Check OS and security-policy limitations against that preview's qualification.
-On Linux x64, require glibc 2.35 or newer. Debian Bookworm is the recorded Linux
-client baseline. Check the **Agent's own Linux machine** before `aiv connect`:
-
-```bash
-getconf GNU_LIBC_VERSION
-```
-
-If glibc is older than 2.35, use a compatible Agent machine. A missing glibc
-symbol is an incompatible client runtime; installing host Python does not fix
-the native bundle. The static Go CLI and Docker services have separate runtime
-requirements: application runtime libraries are inside their images. Successful
-deployment on an older Docker host does not qualify Agent installation there.
+The static `aiv` CLI, Docker services and hook installers have separate runtime
+requirements. Consult `aiv connect --help` and the deployment's Agent catalog
+before issuing an installation grant. Preserve existing Agent configurations.
 
 ## Find the CLI before installing
 
@@ -150,165 +131,92 @@ cannot start needs its actual platform/runtime error resolved.
 
 ## Resolve the version and download matching assets
 
-Use the [channel choice](../SKILL.md#choose-release-or-daily) and the operator's
-own authenticated `gh` session. Record the Linux deployment platform separately
-from the computer running `aiv` and the machines running the Agents. Read the
-Docker daemon architecture with `docker version --format '{{.Server.Os}}/{{.Server.Arch}}'`.
-For Kubernetes, check the nodes that can run the workloads in the selected context.
+Use [published CLI discovery](install-cli.md#discover-a-published-cli) to resolve
+Stable or an explicitly selected Daily from [product Releases](https://github.com/antgroup/ai-vision/releases).
+Read the exact `tag` and `product_version`. Select `release-images.vars.yaml` for
+bundled OceanBase CE or `release-seekdb.vars.yaml` for bundled seekdb. Kubernetes
+uses the CE asset. With an external datastore, preserve its connection and
+configuration when merging the selected product image pins.
 
-| Choice | Resolve before changing an installation |
-| --- | --- |
-| Release (default) | Start at the product repository's [latest stable Release](https://github.com/ob-labs/ai-vision-ob/releases/latest). Confirm the published version, selected platform and matching assets. |
-| Daily | Use [published CLI discovery](install-cli.md#discover-a-published-cli) and the exact published base `delivery-v<product-version>` prerelease in `ob-labs/ai-vision-skills`. For deployment, use `base_tag` from the discovery result. Check the base manifest against the actual Linux deployment platform. |
-| Explicit version or retry | Inspect that exact Release or reuse the recorded selection. An unsupported requested platform or missing asset stops the operation. |
-
-For restricted Daily, use a Linux x86 deployment host (`linux/amd64`) and a
-base manifest that lists `linux/amd64` in `image_platforms` and `linux-x64` in
-`cli_platforms`. Linux ARM64, Intel Mac, and Windows ARM64 are paused for this
-channel, including selection of older releases for those platforms. For an
-unpinned Daily, consider published, non-draft base Releases from newest to oldest
-by product version, snapshot date, and numeric revision. Require the matching CLI
-and the selected datastore vars asset. Use the published manifest for stable
-Release platform support. Repeat discovery for the next operation.
-
-When Apple Silicon or Windows x64 Agent onboarding is in scope, also require the
-matching published client artifacts and preview backend configuration. For a new
-unpinned deployment, choose the newest base that satisfies the client needs and
-server platform. For an existing deployment, verify the preview against its
-selected base and preserve deployment identity. A different base requires the
-[ordinary upgrade workflow](upgrade.md#prepare-and-run-the-upgrade).
-Pin the exact base tag and any historical companion tag after selection.
-Registry `daily` and `dev`
-tags do not select a product Release. On an authentication, download or checksum
-error, resolve that error before using the candidate. A confirmed incompatible
-candidate can be skipped for unpinned discovery within the requested channel.
-
-Set `AIV_RELEASE_TAG` to the selected base tag and `AIV_DELIVERY_REPOSITORY` to its
-repository. The CLI discovery result provides `base_tag`, `repository`, and
-`product_version`. Use `AIV_IMAGE_VARS=release-images.vars.yaml` for OceanBase CE or
-`AIV_IMAGE_VARS=release-seekdb.vars.yaml` for Docker/Compose with seekdb. For
-Kubernetes, use the CE asset as explained in the [Kubernetes recipe](kubernetes.md).
-Download into an empty temporary directory and verify the two selected files.
+On the deployment machine, check the daemon architecture independently:
 
 ```bash
-: "${AIV_RELEASE_TAG:?Set the selected versioned base tag}"
-: "${AIV_DELIVERY_REPOSITORY:?Set the selected repository}"
-: "${AIV_IMAGE_VARS:?Set the selected datastore vars filename}"
-AIV_WORKDIR=$(mktemp -d)
-gh release view "$AIV_RELEASE_TAG" --repo "$AIV_DELIVERY_REPOSITORY" \
-  --json tagName,isDraft,isPrerelease,publishedAt,assets &&
-gh release download "$AIV_RELEASE_TAG" --repo "$AIV_DELIVERY_REPOSITORY" \
-  --pattern SHA256SUMS --pattern release-manifest.json --pattern "$AIV_IMAGE_VARS" \
-  --dir "$AIV_WORKDIR" &&
-(
-  cd "$AIV_WORKDIR" &&
-  awk -v vars="$AIV_IMAGE_VARS" '
-    $2 == vars || $2 == "release-manifest.json" { print; seen[$2]++ }
-    END { if (seen[vars] != 1 || seen["release-manifest.json"] != 1) exit 1 }
-  ' SHA256SUMS > SHA256SUMS.selected &&
-  if command -v sha256sum >/dev/null 2>&1; then
-    sha256sum -c SHA256SUMS.selected
-  else
-    shasum -a 256 -c SHA256SUMS.selected
-  fi
-)
+docker version --format '{{.Server.Os}}/{{.Server.Arch}}'
 ```
 
-Inspect the `release view` result for the exact tag, a publication date and the
-expected channel. Daily is a prerelease. Verify that the manifest's
-`product_version` matches the tag's product version and that its `channel` is
-`daily` or `stable` as selected. For restricted Daily, confirm
-`delivery.repository`, `delivery.release_tag`, `delivery.catalog_sha` and
-`source_repository` identify the exact Skills release, catalog commit and product
-repository. Verify all five vars image pins against `images`, the chosen bundled
-database against `databases`, and `AIVISION_RELEASE_MANIFEST_BASE64` against that
-manifest. Base Daily image references use `ghcr.io/ob-labs/ai-vision-skills/` and
-immutable digests. Its bundled databases use the official upstream digests and
-must include the selected native deployment architecture. Keep
-`NATIVE_PYTHON_RUNTIME` enabled when the selected native configuration sets it.
-Keep the verified manifest and vars in the durable deployment directory.
-
-### Select the Agent-client backend configuration
-
-Apply preview configuration only for the requested client platforms on a
-compatible base. Use the selected release's verified asset list and checksums.
-A macOS CLI runs on the Agent machine. The preview backend still runs on Linux.
-
-| Published layout | OceanBase CE vars | seekdb vars | macOS checksums |
-| --- | --- | --- | --- |
-| Apple Silicon preview inside the base `delivery-v<product-version>` Release | `release-macos-oceanbase.vars.yaml` | `release-macos-seekdb.vars.yaml` | `SHA256SUMS.macos` |
-| Historical Apple Silicon `macos-codex-preview-v*` companion | `release-images.vars.yaml` from the companion | `release-seekdb.vars.yaml` from the companion | `SHA256SUMS` from the companion |
-
-For Linux x64 clients, use the selected base's `release-images.vars.yaml` or
-`release-seekdb.vars.yaml`. For Apple Silicon, use the integrated macOS assets
-when the selected base publishes them. If the matching preview is only in a
-separate published companion, use that exact companion and its original asset
-names. The [CLI discovery result](install-cli.md#discover-a-published-cli)
-identifies the Mac asset `tag` and server `base_tag`.
-
-Download `macos-codex-preview.json`, the selected vars and the macOS checksums
-from the exact Mac asset tag into a separate directory. Set `AIV_MAC_RELEASE_TAG`,
-`AIV_MAC_VARS`, and `AIV_MAC_SUMS` from the verified layout above. The Mac tag is
-the base tag for an integrated preview. Use the checksum file from the same
-Release and verify one SHA-256 record for each selected file.
+Use a private working directory and set `AIV_TAG` to the verified versioned tag.
+Use `AIV_IMAGE_VARS` to choose the matching CE or seekdb asset.
 
 ```bash
-: "${AIV_MAC_RELEASE_TAG:?Set the selected Mac asset tag}"
-: "${AIV_MAC_VARS:?Set the selected Mac datastore vars filename}"
-: "${AIV_MAC_SUMS:?Set the Mac checksum filename}"
-AIV_MAC_WORKDIR=$(mktemp -d)
-gh release download "$AIV_MAC_RELEASE_TAG" --repo "$AIV_DELIVERY_REPOSITORY" \
-  --pattern macos-codex-preview.json --pattern "$AIV_MAC_VARS" \
-  --pattern "$AIV_MAC_SUMS" --dir "$AIV_MAC_WORKDIR" &&
-(
-  cd "$AIV_MAC_WORKDIR" &&
-  awk -v vars="$AIV_MAC_VARS" '
-    $2 == vars || $2 == "macos-codex-preview.json" { print; seen[$2]++ }
-    END { if (seen[vars] != 1 || seen["macos-codex-preview.json"] != 1) exit 1 }
-  ' "$AIV_MAC_SUMS" > SHA256SUMS.selected &&
-  if command -v sha256sum >/dev/null 2>&1; then
-    sha256sum -c SHA256SUMS.selected
-  else
-    shasum -a 256 -c SHA256SUMS.selected
-  fi
-)
+: "${AIV_TAG:?Set the exact resolved release tag}"
+: "${AIV_IMAGE_VARS:?Choose release-images.vars.yaml or release-seekdb.vars.yaml}"
+base="https://github.com/antgroup/ai-vision/releases/download/$AIV_TAG"
+for asset in SHA256SUMS release-manifest.json "$AIV_IMAGE_VARS"; do
+  curl -q --fail --silent --show-error --location --proto '=https' --proto-redir '=https' \
+    "$base/$asset" --output "$asset" || exit 1
+done
+awk -v vars="$AIV_IMAGE_VARS" '
+  $2 == vars || $2 == "release-manifest.json" { print; seen[$2]++ }
+  END { if (seen[vars] != 1 || seen["release-manifest.json"] != 1) exit 1 }
+' SHA256SUMS > selected-assets.sha256 &&
+  if command -v sha256sum >/dev/null 2>&1; then sha256sum -c selected-assets.sha256
+  else shasum -a 256 -c selected-assets.sha256; fi
 ```
 
-Confirm that the verified manifest's `release_tag` equals the Mac asset tag,
-`base_release` equals the selected base tag, and `profile` is `macos-codex-preview`.
-Both tags are the same for the integrated layout. Check `client["darwin/arm64"]`
-and the selected vars SHA-256 in `assets`. Confirm `backend.base_reference`
-equals the base manifest's `images["aivision-be"]` digest reference and
-`backend.apple_silicon.platform` is `linux/amd64`. Match `BE_IMAGE` or
-`BACKEND_IMAGE` to `backend.apple_silicon.reference`. Decode the macOS vars'
-`AIVISION_RELEASE_MANIFEST_BASE64` and compare it with the base manifest. For this
-preview only `images["aivision-be"]` changes, to the declared macOS backend digest.
-Keep the four other service pins and the chosen datastore's upstream digest.
-Apple notarization is pending for this preview.
+Confirm the release tag, product version, channel and the manifest's five GHCR
+digests against discovery and the selected vars. Compare the service and database
+indices with the actual deployment architecture and read the published notes for
+runtime qualification. A CLI archive or an image index verifies availability for
+a platform. Verify service health, authentication and Trace readback before
+reporting deployment success.
 
-Use `release-windows-preview.vars.yaml` only when Windows x64 preview is explicitly
-requested. The published Windows assets live alongside the Linux base in the
-same Release. Use the authenticated GitHub Releases API's `assets[].digest` to
-verify the downloaded `windows-preview.json` and `release-windows-preview.vars.yaml`.
-Also compare the vars file's SHA-256 with its entry in `windows-preview.json`.
-The base `SHA256SUMS` covers the base files. The Windows bundle's `.sha256`
-file covers its ZIP. Confirm `release.repository`, `release.tag`, `product_version`,
-`client_platform`, `server_platform`, and `windows_image.registry_ref` in the
-verified preview metadata.
-Merge the preview vars into one complete isolated Linux x86 test configuration,
-keeping the four other service pins and the original database settings. The
-published override intentionally clears `AIVISION_RELEASE_MANIFEST_BASE64`. Keep
-the verified base manifest and preview metadata privately to record the actual
-configuration. Windows native end-to-end acceptance is pending. The Mac and
-Windows previews use different backend digests. Deploy a combination only when a
-published backend explicitly covers both.
+### Verify an unpublished Actions candidate
 
-For managed Docker/Compose use the chosen datastore asset and preserve its
-matching database selector and digest. For an external datastore, keep
-`OB_MANAGED: "false"` and the existing connection settings and database image
-policy. Apply a preview only to the target described by its Release. For
-Kubernetes, use the target's verified base service images unless the preview
-explicitly supports that target.
+Use this route only for an explicitly requested maintainer trial. The public
+installer accepts published releases. For a candidate, use the GitHub CLI to
+retrieve the exact successful Actions attempt and its frozen acceptance receipt
+in an empty private directory. Set `AIV_RUN_ID` and `AIV_RUN_ATTEMPT` to the
+selected run and attempt before starting.
+
+```bash
+set -eu
+: "${AIV_RUN_ID:?Set the selected Actions run ID}"
+: "${AIV_RUN_ATTEMPT:?Set the selected Actions attempt number}"
+repo=antgroup/ai-vision
+gh run view "$AIV_RUN_ID" --repo "$repo" --attempt "$AIV_RUN_ATTEMPT" \
+  --json attempt,conclusion,headSha > run.json
+jq -e --argjson attempt "$AIV_RUN_ATTEMPT" \
+  '.attempt == $attempt and .conclusion == "success"' run.json >/dev/null
+gh run download "$AIV_RUN_ID" --repo "$repo" \
+  --name "release-assets-$AIV_RUN_ATTEMPT" --dir assets
+gh run download "$AIV_RUN_ID" --repo "$repo" \
+  --name "release-acceptance-$AIV_RUN_ATTEMPT" --dir acceptance
+build_id="$AIV_RUN_ID.$AIV_RUN_ATTEMPT"
+source_sha=$(jq -r .headSha run.json)
+checksums_sha=$(shasum -a 256 assets/SHA256SUMS | awk '{print $1}')
+manifest_sha=$(shasum -a 256 assets/release-manifest.json | awk '{print $1}')
+jq -e --arg repo "$repo" --arg build "$build_id" --arg sha "$source_sha" \
+  --arg checksums "$checksums_sha" --arg manifest "$manifest_sha" '
+  .status == "qualified" and .source_repository == $repo
+  and .build_id == $build and .source_sha == $sha
+  and .assets.SHA256SUMS.sha256 == $checksums
+  and .assets["release-manifest.json"].sha256 == $manifest
+  and (.smokes | keys == ["oceanbase", "seekdb"] and all(.[];
+    .status == "passed" and .source_sha == $sha and .build_id == $build
+    and .manifest_sha256 == $manifest and .initial_pinned_content_verified
+    and .recast_pinned_content_verified))
+' acceptance/candidate-acceptance.json >/dev/null
+(cd assets && shasum -a 256 -c SHA256SUMS)
+```
+
+Extract only the `aiv` executable from the verified archive for the CLI host.
+Check that `aiv --version` matches `product_version` in `release-manifest.json`.
+Choose the matching verified vars, merge host settings into one private file,
+and run the [isolated Docker procedure](docker.md#verify-and-rerun). Record the
+run ID, attempt, actual daemon architecture, database and image digests. The
+frozen dual-database smoke covers the platform recorded in the receipt. Verify
+other environments separately. If any receipt or selected asset is missing or
+fails verification, stop this candidate trial.
 
 ## Install or upgrade the CLI when needed
 
@@ -394,8 +302,7 @@ For CLI-managed Docker or Compose, merge the verified vars entries into the
 original private `aivision.vars.yaml`, updating existing keys rather than
 appending duplicates. Reconcile legacy/canonical image aliases and higher-priority
 `AIV_VAR_*` / `--var` image overrides as described in the upgrade workflow. Check
-the effective five image pins and manifest against the selected base or verified
-preview configuration before `cast`.
+the effective five image pins and manifest against the selected release before `cast`.
 Keep its password, history start, datastore choice, ports, addresses and custom
 selectors. For an external database, retain `OB_MANAGED: "false"`, connection
 settings and its existing database image policy. The downloaded database image

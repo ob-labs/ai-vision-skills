@@ -17,7 +17,15 @@ Allow 6 GiB for the container and disk space for the image and growing data
 volume. Ports `5174` for Web and `4318` for OTLP/HTTP bind to loopback. Choose
 unused ports if another service already uses either one.
 
-### Run the installer directly
+### Historical preview releases
+
+The restricted preview releases are kept for authorized existing users and
+record their own versions. For a public product candidate, use a separately
+qualified All-in-One bundle with its own manifest and checksums. Follow the
+[offline instructions](#install-offline) when a verified bundle is supplied.
+Choose distributed deployment if there is no compatible All-in-One bundle.
+
+### Run the historical installer directly
 
 Authenticate `gh` on `github.com` with an account that can read the private
 `ob-labs/ai-vision-skills` repository. From an empty directory, set `preview_tag`
@@ -34,7 +42,7 @@ gh release download "$preview_tag" --repo ob-labs/ai-vision-skills \
   python3 "$installer" --tag "$preview_tag"
 ```
 
-### Install with a coding Agent
+### Install a historical preview with a coding Agent
 
 From the installed `aivision-deploy` Skill, set `AIV_SKILL_DIR` to the absolute
 path of that directory. Use the same `gh` access. Resolve and display the tag
@@ -132,10 +140,10 @@ diagnosis. Connect your own Agent below when you want to see its telemetry.
 
 Run `getconf GNU_LIBC_VERSION` on the Linux Agent machine and require glibc
 2.35 or later. Match the CLI to the **Agent machine's** CPU. Check the
-qualification of the selected preview for its matching native Agent payload.
+qualification of the selected preview for its matching Agent payload.
 The Docker host, browser and Agent can be different machines. For a different
 client OS, check the published backend and client combination in the
-[distributed guide](prerequisites.md#select-the-agent-client-backend-configuration).
+[distributed Agent requirements](prerequisites.md#agent-client-runtime).
 
 1. Install or reuse the matching Linux `aiv` on the Agent machine. Copy the
    All-in-One installer there, or set `installer` to the script in the locally

@@ -21,12 +21,10 @@ First [prepare the fixed history start](../SKILL.md#fix-the-history-start-before
 in `./aivision.vars.yaml`. Generate it once only for confirmed empty storage;
 reuse the saved timestamp for retained data and all subsequent casts. Merge the
 selected published Release or Daily's [verified image variables](prerequisites.md#resolve-the-version-and-download-matching-assets)
-into that same private file, preserving its other settings. For restricted Daily
-use a Linux x86 Docker daemon. If Apple Silicon or Windows x64 Agent clients
-are requested, verify the [compatible backend configuration](prerequisites.md#select-the-agent-client-backend-configuration)
-for the selected base and datastore before merging. For explicitly
-requested source images, follow [source build identity and verification](prerequisites.md#source-build-identity-and-verification)
-and use `IMAGE_PULL=missing` in the command below for unpublished local images.
+into that same private file, preserving its other settings. Use the release notes
+and image manifests to verify that the deployment daemon's platform is supported.
+For explicitly requested source images, follow [source build identity and verification](prerequisites.md#source-build-identity-and-verification)
+and use `IMAGE_PULL=missing` for unpublished local images.
 
 ```bash
 aiv cast --vars-file ./aivision.vars.yaml --var IMAGE_PULL=always
@@ -75,7 +73,7 @@ flags retain their existing precedence.
 | Bundled OceanBase seekdb (lightweight option) | merge the verified `release-seekdb.vars.yaml`, including its backend and database image |
 | An OceanBase CE or seekdb you already run | keep `OB_MANAGED: "false"` and existing connection settings in that vars file; use `OB_BACKEND=seekdb` for seekdb |
 | Install a Release or Daily | Resolve a compatible published base and merge its verified datastore vars into the same private vars file |
-| Enable Apple Silicon or Windows x64 Agent onboarding | Merge the verified [client preview backend configuration](prerequisites.md#select-the-agent-client-backend-configuration) for the exact base and datastore |
+| Enable Agent onboarding | Check the [Agent client runtime](prerequisites.md#agent-client-runtime) and verify the installed backend serves the matching installer |
 | Kubernetes | `--target kubernetes --context <context>` — see [kubernetes](kubernetes.md) |
 | A second, isolated stack on the same host | `--namespace <name>` plus the port overrides below |
 
@@ -409,12 +407,10 @@ ordinary source builds, not this private native delivery.
 
 ## Agent machine onboarding
 
-Check the [native Agent client runtime](prerequisites.md#native-agent-client-runtime)
-on the Agent machine first. Verify that the deployed backend serves that client's
-installer. On Linux x64, require glibc 2.35 or newer. For Apple Silicon or
-Windows x64, use the matching published preview CLI and
-[backend configuration](prerequisites.md#select-the-agent-client-backend-configuration).
-Record deployment and Agent client platforms separately.
+Check the [Agent client runtime](prerequisites.md#agent-client-runtime) on the
+Agent machine first. Verify that the deployed backend serves that client's
+installer. Standard releases use the source-compatible installer with Python
+3.11 or newer. Record deployment and Agent client platforms separately.
 
 Use the machine and user account that run the target coding Agent:
 
@@ -426,11 +422,8 @@ Use the machine and user account that run the target coding Agent:
    `--collection-mode`. If a required command or flag is missing, follow the
    [CLI installation or upgrade steps](prerequisites.md#install-or-upgrade-the-cli-when-needed)
    and repeat the help check before generating an authorization.
-   Use the selected Daily's native Agent installer; it does not require
-   user-installed Python. Confirm the deployed platform actually serves that
-   native installer before continuing. An older Python-based hook is a separate
-   compatibility path, not a reason to add a Python prerequisite to this native
-   flow. The host Agent must be installed and configured.
+   Confirm the deployed platform serves the installer for the selected Agent and
+   client architecture, and that the host Agent is installed and configured.
 2. Open the deployed Web URL, register/sign in, and choose the target Agent's
    onboarding guide. Generate the installation command **after** the client
    prerequisites are ready. Run that complete command unchanged in the Agent

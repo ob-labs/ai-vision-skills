@@ -60,21 +60,13 @@ shared canonical copy, or independent copies. `--all` selects all skills and
 all agents without prompting. See the upstream
 [installation methods](https://github.com/vercel-labs/skills#installation-methods).
 
-During the restricted trial, only authorized repository users can install.
-The command clones this Skills repository using the caller's own authorized
-GitHub/Git session; do not distribute shared tokens. An authorized operator may
-also make the complete manual copy below. For the CLI, follow the installation
-reference in the installed Skill. It discovers a published compatible Release,
-identifies the exact tag for the operation, and checks the download before
-replacing an installed binary. The current trial offers Linux x64 and Apple
-Silicon clients, and a Windows x64 client preview. Mac packages can be part of
-the base Daily or a historical companion that identifies its exact base. The
-Windows x64 preview uses a ZIP and its own verified manifest. For deployment, check the Docker host and
-Agent platforms separately and use the selected release's digest-pinned vars.
-Stable product Releases retain their original channel.
-Installing a Skill, downloading a CLI Release, pulling platform images, and
-signing in to AI Vision are separate operations; authenticate only the one that
-actually requires access.
+Authorized readers can install the catalog while its repository is private.
+For CLI downloads, follow the installation reference bundled with each Skill.
+It resolves the selected public product Release, verifies the exact version and
+checksums, and preserves an installed binary if verification fails. Check the
+Docker host and Agent platforms separately and use the release's digest-pinned
+vars. Installing a Skill, downloading a CLI release, pulling product images,
+and signing in to AI Vision are separate operations.
 
 ### Manual copy
 

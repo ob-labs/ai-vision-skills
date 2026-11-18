@@ -49,27 +49,12 @@ If the user delegates the choice, use Release. For an existing deployment,
 inspect its saved configuration and actual version first; retries keep that
 combination, and upgrades use the channel or version the user requested.
 
-Resolve a **published versioned GitHub Release** before installing. For Release,
-start with the product repository's latest stable Release. For Daily, discover
-the newest compatible published `delivery-v<product-version>` base prerelease in
-`ob-labs/ai-vision-skills`. The restricted Daily deployment host must be Linux
-x86 (`linux/amd64`). Verify that the base manifest includes that server platform
-and the selected datastore. The CLI host and Agent clients can differ from the
-server. Keep an explicit requested version and
-reuse the recorded selection for retries. A missing compatible publication stops
-that path. Follow [version resolution and matching assets](reference/prerequisites.md#resolve-the-version-and-download-matching-assets).
-
-For Apple Silicon Agent onboarding, use the macOS assets in the selected Daily
-when present. A published historical companion is compatible only with its
-exact base. For Windows x64, use the verified preview override only when
-requested. Preserve the base release's other images and datastore settings.
-See [Agent-client backend selection](reference/prerequisites.md#select-the-agent-client-backend-configuration)
-for matching configuration and acceptance limits.
-Pin the chosen tags for the operation and install the matching CLI on each host.
-
-The restricted native CLI profile excludes source-mode Python resources before
-linking. It supports CLI-managed `--target compose` with matching native vars.
-Standalone `--compose-file` remains available in ordinary source CLI builds.
+Resolve an exact versioned [product Release](https://github.com/antgroup/ai-vision/releases).
+Choose a published stable `vMAJOR.MINOR.PATCH` or a published Daily
+`vMAJOR.MINOR.PATCH-daily.YYYYMMDD[.N]`. Use the same release's CLI, manifest and
+database vars, preserving their image digests. Test and verify the CLI host,
+deployment host, and Agent client separately. A missing compatible publication
+stops the normal installation path. See [version resolution and matching assets](reference/prerequisites.md#resolve-the-version-and-download-matching-assets).
 
 ## Decide the environment first
 
@@ -216,13 +201,11 @@ vars file**, preserving the datastore, password, fixed history start, addresses
 and ports. Use the CE or seekdb asset for that selected backend; see
 [matching assets](reference/prerequisites.md#resolve-the-version-and-download-matching-assets).
 Use the selected base's five exact service digests, including SigNoz, and its
-`AIVISION_RELEASE_MANIFEST_BASE64`. If Agent onboarding requires a preview,
-apply its verified backend configuration using the [same-base compatibility checks](reference/prerequisites.md#select-the-agent-client-backend-configuration).
-Keep `NATIVE_PYTHON_RUNTIME` enabled for native delivery. The services and native
-Agent installation require no user-installed Python. For
-explicitly requested local images, keep their
-recorded references and use `IMAGE_PULL=missing` instead of `always` below when
-those images exist only on this host.
+`AIVISION_RELEASE_MANIFEST_BASE64`.
+The public standard release runs the deployment services in containers and
+supplies source-compatible Agent installers. Check the Agent's own runtime
+separately. For explicitly requested local images, keep their recorded references
+and use `IMAGE_PULL=missing` when the images exist only on this host.
 
 ```bash
 aiv cast --vars-file ./aivision.vars.yaml --var IMAGE_PULL=always
@@ -418,8 +401,8 @@ on other machines, override `BIND_ADDR` and `PUBLIC_HOST` as described in
 
 | Symptom | Cause and fix |
 |---|---|
-| Release download returns 403/404, or `gh auth status` fails | Check the tag, asset name, network and authorized Release access. Restricted trial downloads use the operator's own `gh` account; if needed use `gh auth login --hostname github.com --web`. Repository access, CLI delivery and image access remain separate. |
-| `docker pull ghcr.io/ob-labs/…` denied / `unauthorized` | Check image access. If authentication is needed, use `docker login ghcr.io -u <user>` with an authorized PAT with `read:packages` (<https://github.com/settings/tokens/new>). Handle network and disk errors separately. |
+| Public Release download returns 403/404 | Verify the exact published tag and asset, then check connectivity or GitHub rate limits. Historical preview access and product downloads are separate. |
+| `docker pull` denied / `unauthorized` | Check image access. If authentication is needed, use `docker login ghcr.io -u <user>` with an authorized PAT with `read:packages` (<https://github.com/settings/tokens/new>). Handle network and disk errors separately. |
 | `Can't connect to MySQL server on 127.0.0.1:2881` when reusing OB | `127.0.0.1` is the container itself; point `OB_HOST` at the host IP or the Docker bridge gateway. |
 | `bind: address already in use`, or a clash with another stack | Change the whole port set together with `--var` (see the isolated-stack variant). |
 | `--context requires --target kubernetes`, or a docker-only flag is rejected | Kubernetes accepts only the flags listed in its variant. |
@@ -438,8 +421,7 @@ Skill detail:
 - [reference/kubernetes.md](reference/kubernetes.md) — Kubernetes target: cluster
   requirements, bootstrapping a kind cluster, and the flags it rejects
 - [reference/prerequisites.md](reference/prerequisites.md) — shared: what is
-  really required, installing the CLI, the registry login, the private-repository
-  gate
+  really required, exact release verification, and candidate trial verification
 
 Manual user steps: [Docker deployment](https://aivision.mintlify.site/en/deployment/docker)
 and [Kubernetes deployment](https://aivision.mintlify.site/en/deployment/kubernetes).
