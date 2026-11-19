@@ -19,7 +19,7 @@ SPEC.loader.exec_module(installer)
 EARLY = "all-in-one-preview-v0.1.0-daily.20261112"
 LATEST = "all-in-one-preview-v0.1.0-daily.20261113"
 ARM_LATEST = "all-in-one-preview-v0.1.0-daily.20261113.2"
-BASE_RELEASE = "delivery-v0.1.0-daily.20261108"
+BASE_RELEASE = "v0.1.0-daily.20261108"
 AMD64 = "linux/amd64"
 ARM64 = "linux/arm64"
 AMD64_MANIFEST, AMD64_ARCHIVE, AMD64_CLI = installer.ASSETS[AMD64]
@@ -43,7 +43,7 @@ def release(tag, published_at, release_id, *, draft=False, prerelease=True, miss
 class ReleaseDiscoveryTests(unittest.TestCase):
     def setUp(self):
         pages = [[
-            release("delivery-v0.1.0-daily.20261118", "2026-11-18T10:00:00Z", 8),
+            release("v0.1.0-daily.20261118", "2026-11-18T10:00:00Z", 8),
             release("all-in-one-preview-v0.1.0-daily.20261117", "2026-11-17T10:00:00Z", 7,
                     draft=True),
             release("all-in-one-preview-v0.1.0-daily.20261116", "2026-11-16T10:00:00Z", 6,
@@ -65,7 +65,7 @@ class ReleaseDiscoveryTests(unittest.TestCase):
         self.assertEqual(installer.resolve_release(None, AMD64), LATEST)
         self.output.assert_called_once_with(
             "gh", "api", "--hostname", "github.com", "--paginate", "--slurp",
-            "repos/ob-labs/ai-vision-skills/releases?per_page=100",
+            "repos/antgroup/ai-vision/releases?per_page=100",
         )
 
     def test_exact_tag_selects_older_release_and_never_falls_back(self):
@@ -141,6 +141,11 @@ class PackageTests(unittest.TestCase):
     def test_verified_package_keeps_the_image_identity_and_base_release(self):
         self.assertEqual(installer.read_manifest(self.folder, LATEST, AMD64), self.manifest)
         self.assertEqual(installer.image_archive(self.folder, self.manifest, None, "auto", True)[0], AMD64_ARCHIVE)
+
+    def test_keeps_original_base_tag_in_a_trusted_local_bundle(self):
+        manifest = {**self.manifest, "base_release": f"delivery-{BASE_RELEASE}"}
+        (self.folder / AMD64_MANIFEST).write_text(json.dumps(manifest), encoding="utf-8")
+        self.assertEqual(installer.read_manifest(self.folder, None, AMD64), manifest)
 
     def test_rejects_wrong_pinned_release_and_changed_archive(self):
         with self.assertRaisesRegex(ValueError, "selected All-in-One preview"):

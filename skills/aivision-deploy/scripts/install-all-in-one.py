@@ -18,10 +18,11 @@ from tempfile import NamedTemporaryFile, TemporaryDirectory
 import time
 
 
-REPO = "ob-labs/ai-vision-skills"
+REPO = "antgroup/ai-vision"
 PROFILE = "all-in-one-preview"
 TAG = re.compile(r"all-in-one-preview-v\d+\.\d+\.\d+-daily\.\d{8}(?:\.\d+)?")
-BASE = re.compile(r"delivery-v\d+\.\d+\.\d+-daily\.\d{8}(?:\.\d+)?")
+# Existing offline bundles may still carry the former delivery- tag prefix.
+BASE = re.compile(r"(?:delivery-)?v(\d+\.\d+\.\d+-daily\.\d{8}(?:\.\d+)?)")
 ARCHITECTURES = {"x86_64": "amd64", "amd64": "amd64", "aarch64": "arm64", "arm64": "arm64"}
 ASSETS = {
     "linux/amd64": ("all-in-one-manifest.json", "aiv-all-in-one-linux-amd64.tar.gz", "aiv-linux-x64.tar.gz"),
@@ -63,7 +64,7 @@ def resolve_release(tag, target):
         and required_assets <= {asset["name"] for asset in release["assets"] if asset["state"] == "uploaded"}
     ]
     if not releases:
-        raise ValueError(f"No published All-in-One preview for {target} matches the request.")
+        raise ValueError(f"No published All-in-One preview for {target} matches the request in {REPO}.")
     return max(releases, key=lambda release: (release["published_at"], release["id"]))["tag_name"]
 
 
@@ -121,13 +122,14 @@ def require_size(value):
 def read_manifest(folder, selected, target):
     manifest_name, archive, client_archive = ASSETS[target]
     manifest = json.loads((folder / manifest_name).read_text(encoding="utf-8"))
+    base = BASE.fullmatch(manifest["base_release"])
     if (
         manifest.get("schema_version") != 1
         or manifest.get("profile") != PROFILE
         or manifest.get("platform") != target
         or not TAG.fullmatch(manifest["release_tag"])
         or (selected is not None and manifest["release_tag"] != selected)
-        or not BASE.fullmatch(manifest["base_release"])
+        or base is None
         or manifest.get("archive") != archive
         or not SHA256.fullmatch(manifest["archive_sha256"])
         or not require_size(manifest.get("archive_bytes"))
@@ -149,7 +151,7 @@ def read_manifest(folder, selected, target):
         if (
             not isinstance(client, dict)
             or client.get("archive") != client_archive
-            or f"delivery-v{client.get('version')}" != manifest["base_release"]
+            or client.get("version") != base.group(1)
             or not SHA256.fullmatch(client.get("archive_sha256", ""))
             or not SHA256.fullmatch(client.get("binary_sha256", ""))
             or not require_size(client.get("archive_bytes"))
@@ -240,7 +242,7 @@ def select_cli(folder, manifest, target, assets, online):
         if sum_for(folder, archive) != digest:
             raise ValueError("The base CLI archive checksum differs from authenticated GitHub metadata.")
         client = {"archive": archive, "archive_sha256": digest, "archive_bytes": size,
-                  "version": release_tag[len("delivery-v"):]}
+                  "version": BASE.fullmatch(release_tag).group(1)}
     return {**client, "platform": target, "preview_tag": preview_tag, "release_tag": release_tag,
             "repository": REPO}
 

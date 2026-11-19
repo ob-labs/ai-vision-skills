@@ -1,78 +1,86 @@
 # Installing the `aiv` CLI
 
-Reuse an installed compatible CLI. Verify its version and the command needed by
-the selected Skill in a fresh terminal.
+Reuse an installed compatible CLI. On Linux or macOS, expose its permanent
+install directory in the current terminal and check the executable. If it
+lives elsewhere, use that directory instead.
 
 ```bash
+export PATH="$HOME/.local/bin:$PATH"
 command -v aiv
 aiv --version
-aiv cast --help
 ```
 
-On Windows, use `Get-Command aiv` to inspect the installed executable.
+On Windows, use `Get-Command aiv` and `aiv --version` in PowerShell. Check the
+command help for the capability you need before changing the deployment or
+profile.
 
 ## Discover a published CLI
 
-The [product Releases](https://github.com/antgroup/ai-vision/releases) supply
-Stable `vMAJOR.MINOR.PATCH` and Daily `vMAJOR.MINOR.PATCH-daily.YYYYMMDD[.N]`
-assets. Stable is the default. Select Daily explicitly with `AIV_CHANNEL=daily`,
-or give `AIV_TAG` a full versioned Daily tag. The helper requires `curl` and
-`jq` and uses public HTTPS. GitHub CLI and an account token are unnecessary.
+Use [official AI Vision Releases](https://github.com/antgroup/ai-vision/releases).
+The standard release build targets Linux and macOS on x64 and ARM64. A native
+Windows x64 installation requires its own published ZIP in the selected
+Release. Check availability before proceeding. CLI availability is independent
+of Docker host or Agent compatibility.
 
-The helper selects the newest compatible published version and requires its
-CLI archive, product manifest, checksums, and both database vars files. Its
-output includes the selected `tag`, `product_version`, and `cli_platform`.
-Check the platform separately on the deployment host and the Agent client.
-Stable and Daily downloads are limited to the assets offered by that release.
-Product Linux and macOS archives have x64 and ARM64 variants. A Windows x64
-installation requires `aiv-windows-x64.zip` from the same public release. Reuse
-an existing compatible Windows CLI if the release has no Windows archive.
+Set `AIV_SKILL_DIR` to the installed directory of this Skill. It contains
+`SKILL.md` and `scripts/`. The bundled [shell helper](../scripts/install-cli.sh)
+and [PowerShell helper](../scripts/install-cli.ps1) share a
+[release selector](../scripts/discover-cli.jq) and require `curl` and `jq`.
+These helpers read the public Releases over HTTPS.
 
-Install only an exact published tag. When no compatible release is available,
-keep the existing CLI and report the missing platform or version. Workflow
-candidate artifacts and rolling aliases are separate from the versioned
-release selection.
+Without overrides, discovery selects the highest compatible stable version.
+For a preview, explicitly select `AIV_CHANNEL=daily`. An exact `AIV_TAG` pins a
+versioned tag such as `vX.Y.Z` (Stable) or
+`vX.Y.Z-daily.YYYYMMDD[.N]` (Daily). If you set only the exact tag, the helper
+infers the channel. Rolling aliases are excluded.
 
-### Linux and macOS
+The helper checks the exact Release and verifies its manifest and checksums.
+Review the resolved repository, tag, product version, platform, and archive.
+If no compatible Release exists, use a compatible CLI already available on
+your machine or follow the [product source-build instructions](https://github.com/antgroup/ai-vision/tree/HEAD/aivision-cli#source-build-pointing-at-a-different-repo-or-branch)
+when source is available and you intend to build it. For a new deployment,
+wait for the matching deployment assets or follow the product's source
+deployment instructions. A missing asset leaves the current installation in
+place.
 
-Set `AIV_SKILL_DIR` to this installed Skill directory. Discovery chooses the
-Apple Silicon archive on a Mac running a Rosetta shell.
+### Linux or macOS
 
 ```bash
 : "${AIV_SKILL_DIR:?Set this to the installed Skill directory}"
 sh "$AIV_SKILL_DIR/scripts/install-cli.sh" --resolve
 ```
 
-For Daily, set `AIV_CHANNEL=daily` for discovery. After checking the result, set
-`AIV_TAG` to its exact tag and install:
+For an explicitly selected Daily, add `AIV_CHANNEL=daily` before the command.
+Set `AIV_TAG` to the exact tag from discovery, then run:
 
 ```bash
-: "${AIV_TAG:?Set this to the verified versioned tag}"
+: "${AIV_TAG:?Set this to the verified tag from discovery}"
 AIV_TAG="$AIV_TAG" sh "$AIV_SKILL_DIR/scripts/install-cli.sh" --install
 ```
 
-The installer verifies the release metadata, product manifest, archive checksum,
-and `aiv --version` before replacing the executable in `~/.local/bin`. Set
-`AIV_INSTALL_DIR` to retain a custom install location. A failed check preserves
-any existing executable. Add the install directory to `PATH` using your shell startup file, then verify
-`command -v aiv` and `aiv --version` in a fresh terminal.
+The helper verifies the archive SHA-256 and executable version before replacing
+the CLI. The default destination is `$HOME/.local/bin/aiv`. Set
+`AIV_INSTALL_DIR` to preserve a custom location. Add the directory to your user
+PATH and verify `command -v aiv`, `aiv --version`, and the relevant command help
+in a new terminal.
 
 ### Windows x64
 
-Run native PowerShell with `curl.exe` and `jq`. This path is available only when
-the public release includes the Windows archive.
+Run the following only for an official Release with a Windows x64 ZIP and
+matching checksums.
 
 ```powershell
-if (-not $env:AIV_SKILL_DIR) { throw 'Set AIV_SKILL_DIR to the installed Skill directory' }
+if (-not $env:AIV_SKILL_DIR) { throw 'Set AIV_SKILL_DIR to the installed Skill directory.' }
 & "$env:AIV_SKILL_DIR/scripts/install-cli.ps1" -Mode Resolve
 ```
 
-Set `$env:AIV_TAG` to the exact returned tag before installing.
+Set `$env:AIV_TAG` to the exact tag from discovery, then run:
 
 ```powershell
 & "$env:AIV_SKILL_DIR/scripts/install-cli.ps1" -Mode Install
 ```
 
-The default installation directory is `%LOCALAPPDATA%\AI Vision\bin`. To preserve
-a custom directory, set `AIV_INSTALL_DIR`. Add the selected directory to your
-user `Path` and run `Get-Command aiv` and `aiv --version` in a new terminal.
+The default destination is `%LOCALAPPDATA%\AI Vision\bin\aiv.exe`. Set
+`AIV_INSTALL_DIR` to preserve a custom location. Add the directory to your user
+Path and verify `Get-Command aiv`, `aiv --version`, and the relevant command help
+in a new PowerShell window.

@@ -8,30 +8,41 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   catalog:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     env:
       DISABLE_TELEMETRY: '1'
       DO_NOT_TRACK: '1'
       PYTHONDONTWRITEBYTECODE: '1'
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: '3.12'
-      - uses: actions/setup-node@v4
-        with:
-          # skills@1.7.4 declares Node >=22.20.0.
-          node-version: '22.20.0'
-      - name: Catalog regression tests
-        run: python3 -m unittest discover -s tests -v
+      - name: Catalog resources and translated README links
+        run: python3 scripts/check_catalog.py
+      - name: Installer and catalog fixture tests
+        run: |
+          jq --version
+          pwsh -NoProfile -NonInteractive -Command '$PSVersionTable.PSVersion.ToString()'
+          python3 -m unittest discover -s tests -v
       - name: Quickstart fixture tests
         run: |
           python3 -m pip install -r skills/aivision-quickstart/scripts/requirements.txt
           python3 -m unittest discover -s skills/aivision-quickstart/tests -v
-      - name: Self-contained resources
-        run: python3 scripts/check_catalog.py
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          # skills@1.7.4 declares Node >=22.20.0.
+          node-version: '22.20.0'
+          package-manager-cache: false
       - name: Upstream discovery and independent installations
         # Runs npx --yes skills@1.7.4 add . --list, then each discovered Skill
         # with --skill <name> --agent codex --copy --yes in disposable projects.

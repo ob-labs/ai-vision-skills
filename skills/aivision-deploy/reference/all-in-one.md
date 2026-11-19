@@ -17,35 +17,30 @@ Allow 6 GiB for the container and disk space for the image and growing data
 volume. Ports `5174` for Web and `4318` for OTLP/HTTP bind to loopback. Choose
 unused ports if another service already uses either one.
 
-### Historical preview releases
+### Run the installer directly
 
-The restricted preview releases are kept for authorized existing users and
-record their own versions. For a public product candidate, use a separately
-qualified All-in-One bundle with its own manifest and checksums. Follow the
-[offline instructions](#install-offline) when a verified bundle is supplied.
-Choose distributed deployment if there is no compatible All-in-One bundle.
-
-### Run the historical installer directly
-
-Authenticate `gh` on `github.com` with an account that can read the private
-`ob-labs/ai-vision-skills` repository. From an empty directory, set `preview_tag`
-to the exact tag from the [All-in-One preview Release](https://github.com/ob-labs/ai-vision-skills/releases).
-Download that release's installer and checksum, then run it. Check that the
-selected release offers the format and sample features you want to use.
+Check [AI Vision Releases](https://github.com/antgroup/ai-vision/releases) for
+an All-in-One preview with the required assets. When available, set
+`preview_tag` to its exact tag from an empty directory and download the
+installer and checksum. Use your own GitHub account if `gh` requires
+authentication. If the product repository has no compatible preview, the
+online path is unavailable. Use a trusted local bundle, a compatible
+[distributed Release](../SKILL.md#choose-release-or-daily), or an existing
+platform for the trial.
 
 ```sh
 : "${preview_tag:?Set this to the All-in-One preview tag}"
 installer=./install-all-in-one.py
-gh release download "$preview_tag" --repo ob-labs/ai-vision-skills \
+gh release download "$preview_tag" --repo antgroup/ai-vision \
   --pattern install-all-in-one.py --pattern SHA256SUMS &&
   (grep -E '^[0-9a-f]{64}  install-all-in-one\.py$' SHA256SUMS | sha256sum --check) &&
   python3 "$installer" --tag "$preview_tag"
 ```
 
-### Install a historical preview with a coding Agent
+### Install with a coding Agent
 
 From the installed `aivision-deploy` Skill, set `AIV_SKILL_DIR` to the absolute
-path of that directory. Use the same `gh` access. Resolve and display the tag
+path of that directory. Use the same product repository. Resolve and display the tag
 before installing. Without `--tag`, the installer uses the most recently
 published compatible preview.
 
@@ -74,7 +69,7 @@ is running. The named data volume is separate from this cache.
 ### Install offline
 
 For a local or offline install, transfer the complete verified candidate or the
-matching [private Release](https://github.com/ob-labs/ai-vision-skills/releases)
+matching [product Release](https://github.com/antgroup/ai-vision/releases)
 assets into a single directory. Both architectures need `install-all-in-one.py`
 and `SHA256SUMS`.
 
@@ -97,7 +92,7 @@ sha256sum --check --ignore-missing SHA256SUMS &&
 Use `--name`, `--web-port`, and `--otlp-port` for a separate trial. Record the
 actual name, version, ports, and the corresponding `<name>-data` volume.
 When the installer reports healthy, open `http://127.0.0.1:5174` or the
-reported Web URL. Register or sign in through the Web UI.
+reported Web URL. Follow the [account registration and first-use handoff](../SKILL.md#help-the-user-sign-in-and-get-started).
 
 If the browser or Agent runs outside the VM, run the following from that
 client machine and keep the SSH connection open. Use the same port numbers as
@@ -140,10 +135,10 @@ diagnosis. Connect your own Agent below when you want to see its telemetry.
 
 Run `getconf GNU_LIBC_VERSION` on the Linux Agent machine and require glibc
 2.35 or later. Match the CLI to the **Agent machine's** CPU. Check the
-qualification of the selected preview for its matching Agent payload.
+qualification of the selected preview for its matching native Agent payload.
 The Docker host, browser and Agent can be different machines. For a different
-client OS, check the published backend and client combination in the
-[distributed Agent requirements](prerequisites.md#agent-client-runtime).
+client OS, verify that the selected preview supports it before generating
+an installation authorization.
 
 1. Install or reuse the matching Linux `aiv` on the Agent machine. Copy the
    All-in-One installer there, or set `installer` to the script in the locally

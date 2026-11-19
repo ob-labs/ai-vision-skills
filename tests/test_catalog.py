@@ -1,5 +1,7 @@
 """Behavioral checks for independently installable Skill directories."""
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -95,9 +97,46 @@ class CatalogTests(unittest.TestCase):
             "[Provenance](https://github.com/ob-labs/ai-vision-ob/commit/123)\n"
             "[Section](#usage) [Email](mailto:example@example.com)\n"
             "```sh\nAIV_REPOSITORY=ob-labs/ai-vision-ob\n"
-            "gh release download v1.0 --repo ob-labs/ai-vision-ob\n```"
+            "gh release download v1.0 --repo antgroup/ai-vision\n```"
         ))
         self.assertEqual(validate_catalog(self.root), [])
+
+    def test_retired_product_release_endpoints_are_reported(self):
+        skill = self.skill(body=(
+            "[Current download](https://github.com/ob-labs/ai-vision-skills/releases/download/v1.0/aiv.tgz)\n"
+            "[Catalog](https://github.com/ob-labs/ai-vision-skills)\n"
+            "```bash\ngh release download v1.0 --repo ob-labs/ai-vision-ob\n```"
+        ))
+        (skill / "install.ps1").write_text(
+            "gh api 'repos/ob-labs/ai-vision-skills/releases'\n", encoding="utf-8"
+        )
+        errors = validate_catalog(self.root)
+        self.assertEqual(len(errors), 3)
+        self.assertTrue(any("install.ps1" in error for error in errors))
+
+
+class CatalogIndexTests(unittest.TestCase):
+    def test_each_catalog_index_links_every_skill_and_resolves_relative_links(self):
+        checker = Path(__file__).resolve().parents[1] / "scripts/check_catalog.py"
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            entry = root / "skills/example/SKILL.md"
+            entry.parent.mkdir(parents=True)
+            entry.touch()
+            for name in ("README.md", "README.zh-CN.md", "README.ja-JP.md"):
+                (root / name).write_text("[Example](skills/example/SKILL.md)\n", encoding="utf-8")
+            (root / "skills/README.md").write_text("[Example](example/SKILL.md)\n", encoding="utf-8")
+            complete = subprocess.run([sys.executable, checker, root], capture_output=True, text=True)
+            self.assertEqual(complete.returncode, 0, complete.stderr)
+
+            (root / "README.ja-JP.md").unlink()
+            (root / "README.zh-CN.md").write_text("[English](README.md) [Missing](guide.md)\n", encoding="utf-8")
+            incomplete = subprocess.run([sys.executable, checker, root], capture_output=True, text=True)
+            self.assertNotEqual(incomplete.returncode, 0, incomplete.stdout)
+            errors = incomplete.stderr.splitlines()
+            self.assertTrue(any("README.ja-JP.md" in error for error in errors))
+            self.assertTrue(any("README.zh-CN.md" in error and "guide.md" in error for error in errors))
+            self.assertTrue(any("README.zh-CN.md" in error and "skills/example/SKILL.md" in error for error in errors))
 
 
 class InstallationChecksTests(unittest.TestCase):

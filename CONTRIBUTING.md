@@ -8,21 +8,24 @@ Keep `skills/<name>/SKILL.md` names stable and provide concise `name` and `descr
 
 Preserve supported deployment lifecycle, identity, authentication, telemetry, and compatibility constraints. A Skill edit must not invent missing CLI capabilities, Release assets, runtime evidence, or extra user authorizations. Keep credentials in private local configuration and out of commits, screenshots, fixtures, and command output.
 
-When adding a Skill, update both catalog indexes. Preserve relevant tests and bundled dependencies. Product versioning is independent of catalog tags. Reserve `skills-v<catalog-version>` for catalog-only versions. Product Stable and Daily artifacts come from the exact published release in `antgroup/ai-vision`. Keep historical restricted releases and qualification records scoped to their original versions. Keep recipient discovery independent of any one version and test selection against different published asset sets. Authorized retirement preserves private evidence and checks references before deleting Release assets. See [distribution ownership](docs/distribution.md).
+When adding a Skill, update `README.md`, `README.zh-CN.md`, `README.ja-JP.md`, and `skills/README.md`. Keep the tests and dependencies needed to use and verify each bundle. Install Skills from this Git catalog. Use `antgroup/ai-vision` for product images and Release assets. Test product download selection with release metadata fixtures and keep executable recipes independent of any one version. See [distribution ownership](docs/distribution.md).
 
 ## Checks
 
-Use Python 3.11 or later and Node.js 22.20 or later. The pinned upstream CLI used by CI is `skills@1.7.4`.
+Run the same checks as CI on a POSIX host with Python 3.11 or later, Node.js 22.20 or later, `jq`, and PowerShell (`pwsh`). Use a Python virtual environment for the Quickstart dependencies. The installation check runs the pinned upstream CLI `skills@1.7.4`.
 
 ```bash
 python3 scripts/check_catalog.py
-python3 -m unittest discover -s tests
-python3 -m unittest discover -s skills/aivision-quickstart/tests
-npx --yes skills@1.7.4 add . --list
+python3 -m unittest discover -s tests -v
+python3 -m pip install -r skills/aivision-quickstart/scripts/requirements.txt
+python3 -m unittest discover -s skills/aivision-quickstart/tests -v
+python3 scripts/check_installation.py
 git diff --check
 ```
 
-Test independent installation in a disposable directory, with an explicit agent, before changing the original repository's migration pointers. Do not install validation copies into a user's actual global Skill directories. Run changed scripts against meaningful fixtures and explain untested live services or provider calls.
+The installation check discovers every Skill and copies each one into a separate disposable Codex project. The installer tests exercise release discovery and binary verification with fixtures. The PowerShell installer test uses a POSIX test host, so native Windows qualification requires a separate run. Quickstart exercises its SDK against local HTTP fixtures. State the results of any live deployment, platform access, or model-provider checks separately.
+
+GitHub Actions runs on pull requests and pushes to `main` using a hosted Ubuntu runner and a read-only checkout token. The validation only needs the catalog checkout and public Python and npm packages.
 
 Security scans are handled by the team's existing offline/manual process. Do not add security scanner CI, scan-result gates, or mandatory SBOM/report generation as part of catalog maintenance.
 

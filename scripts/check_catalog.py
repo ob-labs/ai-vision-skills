@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Check bundled resources; upstream ``skills`` owns YAML parsing/discovery.
+"""Check bundled resources and catalog indexes; upstream ``skills`` owns discovery.
 
 The additional checkout rule is deliberately syntactic: shell examples and
 scripts must not clone ob-labs/ai-vision-ob or execute through a named product
 checkout (ai-vision-ob paths or AIV_REPO source-subdirectory paths). Provenance
-URLs, release downloads, and prose about source access remain allowed.
+URLs and prose about source access remain allowed. Product download recipes
+use antgroup/ai-vision.
 """
 from pathlib import Path
 import re
@@ -15,11 +16,19 @@ from urllib.parse import unquote, urlsplit
 INLINE_LINK = re.compile(r"!?\[[^\]\n]*\]\(\s*(<[^>\n]+>|[^\s)]+)(?:\s+[^)\n]*)?\)")
 REFERENCE_LINK = re.compile(r"^\s{0,3}\[[^\]\n]+\]:\s*(<[^>\n]+>|\S+)", re.MULTILINE)
 FENCE = re.compile(r"^\s*(`{3,}|~{3,})([\w-]*)\s*$")
+INDEXES = ("README.md", "README.zh-CN.md", "README.ja-JP.md", "skills/README.md")
 CHECKOUT_COMMAND = re.compile(
     r"\b(?:git\s+clone|gh\s+repo\s+clone)\b[^\n]*"
     r"(?:github\.com[:/])?ob-labs/ai-vision-ob(?:\.git)?(?:[\s\"']|$)"
     r"|\b(?:cd|pushd)\s+[^\n]*\bai-vision-ob(?:[/\s\"']|$)"
     r"|\$(?:AIV_REPO|\{AIV_REPO\})/(?:aivision-cli|deploy|ai-vision|agentlens|antcollector)(?:[/\s\"']|$)"
+)
+RETIRED_REPOSITORY = r"ob-labs/ai-vision-(?:skills|ob)"
+RETIRED_RELEASE_ENDPOINT = re.compile(
+    rf"(?:github\.com/|repos/){RETIRED_REPOSITORY}/releases\b"
+    rf"|\bgh\s+release\s+(?:download|list|view)\b[^\n]*{RETIRED_REPOSITORY}\b"
+    rf"|\bghcr\.io/{RETIRED_REPOSITORY}/",
+    re.IGNORECASE,
 )
 
 
@@ -38,9 +47,15 @@ def _markdown_parts(text: str) -> tuple[str, str]:
         if not fence:
             prose.append(line)
             commands.extend(re.findall(r"`([^`]+)`", line))
-        elif language in {"", "sh", "bash", "shell", "zsh", "console"}:
+        elif language in {"", "sh", "bash", "shell", "zsh", "console", "powershell", "pwsh", "ps1"}:
             commands.append(line)
     return "\n".join(prose), "\n".join(commands)
+
+
+def _markdown_links(prose: str):
+    for pattern in (INLINE_LINK, REFERENCE_LINK):
+        for match in pattern.finditer(prose):
+            yield match.group(1).strip("<>")
 
 
 def validate_catalog(root: Path) -> list[str]:
@@ -73,9 +88,9 @@ def validate_catalog(root: Path) -> list[str]:
                 continue
             if resource.suffix.lower() == ".md":
                 prose, commands = _markdown_parts(resource.read_text(encoding="utf-8"))
-                targets = [match.group(1) for pattern in (INLINE_LINK, REFERENCE_LINK) for match in pattern.finditer(prose)]
-                for target in targets:
-                    target = target.strip("<>")
+                for target in _markdown_links(prose):
+                    if RETIRED_RELEASE_ENDPOINT.search(target):
+                        errors.append(f"{label}: retired product download link {target!r}")
                     parsed = urlsplit(target)
                     if parsed.scheme or parsed.netloc or not parsed.path:
                         continue
@@ -84,22 +99,53 @@ def validate_catalog(root: Path) -> list[str]:
                         errors.append(f"{label}: local resource {target!r} escapes its Skill directory")
                     elif not resolved.exists():
                         errors.append(f"{label}: missing local resource {target!r}")
-            elif resource.suffix in {".sh", ".bash", ".zsh", ".py"}:
+            elif resource.suffix in {".sh", ".bash", ".zsh", ".py", ".ps1", ".jq"}:
                 commands = resource.read_text(encoding="utf-8")
             else:
                 continue
             if CHECKOUT_COMMAND.search(commands):
                 errors.append(f"{label}: executable prerequisite uses a private product checkout")
+            if RETIRED_RELEASE_ENDPOINT.search(commands):
+                errors.append(f"{label}: executable recipe uses a retired product download location")
+    return errors
+
+
+def validate_indexes(root: Path) -> list[str]:
+    root = root.resolve()
+    entries = {entry.relative_to(root) for entry in (root / "skills").glob("*/SKILL.md")}
+    errors = []
+    for index in INDEXES:
+        path = root / index
+        if not path.is_file() or not path.resolve().is_relative_to(root):
+            errors.append(f"{index}: missing catalog index in repository")
+            continue
+        prose, commands = _markdown_parts(path.read_text(encoding="utf-8"))
+        linked_entries = set()
+        for target in _markdown_links(prose):
+            if RETIRED_RELEASE_ENDPOINT.search(target):
+                errors.append(f"{index}: retired product download link {target!r}")
+            parsed = urlsplit(target)
+            if parsed.scheme or parsed.netloc or not parsed.path:
+                continue
+            resolved = (path.parent / unquote(parsed.path)).resolve()
+            if not resolved.is_relative_to(root) or not resolved.exists():
+                errors.append(f"{index}: missing local link target {target!r}")
+                continue
+            linked_entries.add(resolved.relative_to(root))
+        for entry in sorted(entries - linked_entries):
+            errors.append(f"{index}: missing link to {entry}")
+        if RETIRED_RELEASE_ENDPOINT.search(commands):
+            errors.append(f"{index}: executable recipe uses a retired product download location")
     return errors
 
 
 def main() -> int:
     root = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(__file__).resolve().parents[1]
-    errors = validate_catalog(root)
+    errors = validate_catalog(root) + validate_indexes(root)
     if errors:
         print("\n".join(errors), file=sys.stderr)
         return 1
-    print("Skill catalog resource checks passed.")
+    print("Skill resources and catalog indexes passed.")
     return 0
 
 

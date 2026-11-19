@@ -138,7 +138,9 @@ def create_sample(web_port, otlp_port, email, password):
     try:
         platform.api("/auth/login", body={"email": email, "password": password})
     except SampleError as error:
-        raise SampleError(f"Could not sign in. Register or verify your account at {origin}/login.") from error
+        raise SampleError(
+            f"Could not sign in. Use {origin}/register for a new account or {origin}/login to check sign-in."
+        ) from error
 
     spaces = platform.api("/spaces")["items"]
     sample_space = next((space for space in spaces if (
