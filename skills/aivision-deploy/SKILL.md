@@ -13,7 +13,7 @@ assets and the CLI are distributed through
 
 | Situation | Start here |
 |---|---|
-| Personal use on a Linux x86-64 or ARM64 Docker host | Use [All-in-One Personal Edition](reference/all-in-one.md) when a verified bundle matches the host. One container runs the platform with embedded seekdb, and one named Docker volume holds its data. After startup, follow [the first-use handoff](#help-the-user-sign-in-and-get-started). |
+| Personal use on a Linux x86-64 or ARM64 Docker host | Use [All-in-One Personal Edition](reference/all-in-one.md) from a compatible Daily or a verified local bundle. One container runs the platform with embedded seekdb, and one named Docker volume holds its data. After startup, follow [the first-use handoff](#help-the-user-sign-in-and-get-started). |
 | New shared deployment, an external database, or an explicit distributed Docker, Compose or Kubernetes target | Follow the distributed deployment below, including its supported platforms and datastore choices. |
 | Existing instance | Keep its mode, datastore and identity. Use the [All-in-One operations guide](reference/all-in-one.md#stop-restart-or-recreate) for an existing personal installation, or the [distributed upgrade workflow](reference/upgrade.md) for an existing distributed installation. |
 

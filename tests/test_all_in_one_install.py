@@ -20,13 +20,15 @@ EARLY = "all-in-one-preview-v0.1.0-daily.20261112"
 LATEST = "all-in-one-preview-v0.1.0-daily.20261113"
 ARM_LATEST = "all-in-one-preview-v0.1.0-daily.20261113.2"
 BASE_RELEASE = "v0.1.0-daily.20261108"
+DAILY = "v0.6.0-daily.20261120"
+PRODUCT_MANIFEST = "release-manifest.json"
 AMD64 = "linux/amd64"
 ARM64 = "linux/arm64"
 AMD64_MANIFEST, AMD64_ARCHIVE, AMD64_CLI = installer.ASSETS[AMD64]
 ARM64_MANIFEST, ARM64_ARCHIVE, ARM64_CLI = installer.ASSETS[ARM64]
 
 
-def release(tag, published_at, release_id, *, draft=False, prerelease=True, missing=(), target=AMD64):
+def release(tag, published_at, release_id, *, draft=False, prerelease=True, missing=(), target=AMD64, extra=()):
     return {
         "tag_name": tag,
         "id": release_id,
@@ -35,7 +37,8 @@ def release(tag, published_at, release_id, *, draft=False, prerelease=True, miss
         "published_at": published_at,
         "assets": [
             {"name": name, "state": "uploaded", "size": 10, "digest": "sha256:" + "a" * 64}
-            for name in (*installer.ASSETS[target], "install-all-in-one.py", "SHA256SUMS") if name not in missing
+            for name in (*installer.ASSETS[target], "install-all-in-one.py", "SHA256SUMS", *extra)
+            if name not in missing
         ],
     }
 
@@ -77,6 +80,18 @@ class ReleaseDiscoveryTests(unittest.TestCase):
         self.assertEqual(installer.resolve_release(None, ARM64), ARM_LATEST)
         with self.assertRaisesRegex(ValueError, "No published All-in-One release for linux/arm64"):
             installer.resolve_release(LATEST, ARM64)
+
+    def test_daily_requires_complete_all_in_one_assets_for_requested_platform(self):
+        pages = [[
+            release(DAILY, "2026-11-20T10:00:00Z", 10, extra=(PRODUCT_MANIFEST,), target=ARM64),
+            release("v0.6.0-daily.20261121", "2026-11-21T10:00:00Z", 11,
+                    extra=(PRODUCT_MANIFEST,), target=ARM64, missing=(ARM64_MANIFEST, ARM64_ARCHIVE)),
+        ]]
+        self.output.return_value = json.dumps(pages)
+        self.assertEqual(installer.resolve_release(None, ARM64), DAILY)
+        self.assertEqual(installer.resolve_release(DAILY, ARM64), DAILY)
+        with self.assertRaisesRegex(ValueError, "No published All-in-One release for linux/amd64"):
+            installer.resolve_release(DAILY, AMD64)
 
 
 class PlatformTests(unittest.TestCase):
@@ -235,6 +250,118 @@ class PackageTests(unittest.TestCase):
             self.assertEqual(installer.cached_image_archive(cache, LATEST, name, digest, size), cached)
         self.assertEqual(fetch.call_count, 1)
         self.assertEqual(cached.read_bytes(), data)
+
+
+class ProductDailyPackageTests(unittest.TestCase):
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.folder = Path(directory.name)
+        self.files = {}
+        self.source = {
+            "release_tag": DAILY,
+            "source_repository": "antgroup/ai-vision",
+            "source_sha": "fb3972652ccc9eb06f97b20e5ff78382d9e71f9f",
+            "build_id": "44591718170.2",
+        }
+        self.product_manifest = {
+            **self.source, "product_version": DAILY[1:], "channel": "daily", "personal_edition": True,
+        }
+        self.record_file(PRODUCT_MANIFEST, json.dumps(self.product_manifest).encode())
+        self.record_file("sample-trace.py", b"sample helper")
+
+    def record_file(self, name, data):
+        (self.folder / name).write_bytes(data)
+        self.files[name] = (hashlib.sha256(data).hexdigest(), len(data))
+        return self.files[name]
+
+    def package(self, target):
+        name, archive, cli = installer.ASSETS[target]
+        archive_sha, archive_bytes = self.record_file(archive, b"gzip image fixture")
+        cli_sha, cli_bytes = self.record_file(cli, b"CLI archive fixture")
+        zstd = Path(archive).with_suffix(".zst").name
+        zstd_sha, zstd_bytes = self.record_file(zstd, b"zstd image fixture")
+        manifest = {
+            "schema_version": 1,
+            "profile": "all-in-one",
+            "platform": target,
+            "release_tag": DAILY,
+            "base_release": DAILY,
+            "archive": archive,
+            "archive_sha256": archive_sha,
+            "archive_bytes": archive_bytes,
+            "zstd_archive": zstd,
+            "zstd_archive_sha256": zstd_sha,
+            "zstd_archive_bytes": zstd_bytes,
+            "tar_sha256": "a" * 64,
+            "agent_cli": {
+                "archive": cli, "archive_sha256": cli_sha, "archive_bytes": cli_bytes,
+                "binary_sha256": "b" * 64, "version": DAILY[1:],
+            },
+            "image_id": "sha256:" + "c" * 64,
+            "image_tag": "aiv-all-in-one:0.6.0-daily.20261120-" + target.split("/")[1],
+            "source_candidate": self.source,
+        }
+        self.record_file(name, json.dumps(manifest).encode())
+        self.write_checksums()
+        return manifest
+
+    def write_checksums(self):
+        (self.folder / installer.SUMS).write_text(
+            "".join(f"{sha}  {name}\n" for name, (sha, _) in sorted(self.files.items())),
+            encoding="ascii",
+        )
+
+    def test_offline_daily_supports_one_image_archive_for_each_architecture(self):
+        for target in (AMD64, ARM64):
+            with self.subTest(target=target):
+                manifest = self.package(target)
+                (self.folder / manifest["archive"]).unlink()
+                actual, _ = installer.release_manifest(self.folder, None, target)
+                self.assertEqual(actual, manifest)
+                self.assertEqual(installer.image_archive(self.folder, actual, None, "auto", True)[0],
+                                 manifest["zstd_archive"])
+                installer.verify_client_archive(self.folder, actual)
+
+    def test_release_manifest_cannot_describe_a_different_build_with_valid_checksums(self):
+        self.package(ARM64)
+        self.product_manifest["build_id"] = "44591718170.3"
+        self.record_file(PRODUCT_MANIFEST, json.dumps(self.product_manifest).encode())
+        self.write_checksums()
+        with self.assertRaisesRegex(ValueError, "source candidate differs from the product Release manifest"):
+            installer.release_manifest(self.folder, None, ARM64)
+
+    def test_online_daily_checks_both_manifests_and_the_checksum_file(self):
+        manifest = self.package(ARM64)
+        payloads = {path.name: path.read_bytes() for path in self.folder.iterdir()}
+        assets = {name: {"size": len(payload), "digest": "sha256:" + hashlib.sha256(payload).hexdigest()}
+                  for name, payload in payloads.items()}
+
+        def download(destination, tag, *names):
+            self.assertEqual(tag, DAILY)
+            for name in names:
+                (destination / name).write_bytes(payloads[name])
+
+        with tempfile.TemporaryDirectory() as directory, patch.object(
+            installer, "published_assets", return_value=assets,
+        ), patch.object(installer, "download", side_effect=download):
+            destination = Path(directory)
+            self.assertEqual(installer.release_manifest(destination, DAILY, ARM64)[0], manifest)
+            payloads[installer.SUMS] += b"changed"
+            with self.assertRaisesRegex(ValueError, "SHA256SUMS size"):
+                installer.release_manifest(destination, DAILY, ARM64)
+
+    def test_offline_daily_runs_sample_with_the_owned_instance_ports(self):
+        self.package(ARM64)
+        args = SimpleNamespace(name="aiv-trial", tag=None, from_dir=self.folder)
+        with patch.object(installer, "sample_instance", return_value=(DAILY, [55174, 54318])), patch.object(
+            installer.subprocess, "run",
+        ) as run:
+            installer.sample_trace(args, ARM64)
+        run.assert_called_once_with([
+            installer.sys.executable, str(self.folder.resolve() / "sample-trace.py"),
+            "--web-port", "55174", "--otlp-port", "54318",
+        ], check=True)
 
 
 class CliTests(unittest.TestCase):
