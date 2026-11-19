@@ -16,13 +16,20 @@ import sys
 import tarfile
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 import time
+from urllib.error import HTTPError
+from urllib.parse import urlsplit
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 
 REPO = "antgroup/ai-vision"
-PROFILE = "all-in-one-preview"
-TAG = re.compile(r"all-in-one-preview-v\d+\.\d+\.\d+-daily\.\d{8}(?:\.\d+)?")
+PRODUCT_PROFILE = "all-in-one"
+LEGACY_PROFILE = "all-in-one-preview"
+DAILY_VERSION = r"\d+\.\d+\.\d+-daily\.\d{8}(?:\.\d+)?"
+PRODUCT_TAG = re.compile(rf"v({DAILY_VERSION})")
+LEGACY_TAG = re.compile(rf"all-in-one-preview-v{DAILY_VERSION}")
+TAG = re.compile(rf"(?:{PRODUCT_TAG.pattern}|{LEGACY_TAG.pattern})")
 # Existing offline bundles may still carry the former delivery- tag prefix.
-BASE = re.compile(r"(?:delivery-)?v(\d+\.\d+\.\d+-daily\.\d{8}(?:\.\d+)?)")
+BASE = re.compile(rf"(?:delivery-)?v({DAILY_VERSION})")
 ARCHITECTURES = {"x86_64": "amd64", "amd64": "amd64", "aarch64": "arm64", "arm64": "arm64"}
 ASSETS = {
     "linux/amd64": ("all-in-one-manifest.json", "aiv-all-in-one-linux-amd64.tar.gz", "aiv-linux-x64.tar.gz"),
@@ -33,6 +40,8 @@ ASSETS = {
 ELF_MACHINES = {"linux/amd64": 62, "linux/arm64": 183}
 SHA256 = re.compile(r"[a-f0-9]{64}")
 SUMS = "SHA256SUMS"
+PRODUCT_MANIFEST = "release-manifest.json"
+SOURCE_KEYS = ("source_repository", "release_tag", "source_sha", "build_id")
 SAMPLE = "sample-trace.py"
 OWNER = "io.aivision.all-in-one.instance"
 RELEASE = "io.aivision.all-in-one.release"
@@ -48,21 +57,61 @@ def linux_platform(system, architecture):
     return f"linux/{ARCHITECTURES[architecture]}"
 
 
+class ReleaseRedirects(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        target = urlsplit(newurl)
+        if target.scheme != "https" or target.hostname not in {
+            "github.com", "api.github.com", "release-assets.githubusercontent.com", "objects.githubusercontent.com",
+        }:
+            raise ValueError("Release downloads must use an official GitHub HTTPS endpoint.")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+urlopen = build_opener(ReleaseRedirects()).open
+
+
+def release_pages():
+    page_number = 1
+    while True:
+        request = Request(f"https://api.github.com/repos/{REPO}/releases?per_page=100&page={page_number}",
+                          headers={"Accept": "application/vnd.github+json"})
+        try:
+            with urlopen(request, timeout=30) as response:
+                page = json.load(response)
+        except HTTPError as error:
+            if error.code in (403, 429):
+                raise ValueError("GitHub Release discovery is rate-limited. Use --tag with an exact published Daily tag.") from error
+            raise
+        if not isinstance(page, list):
+            raise ValueError("GitHub did not return a Release list.")
+        yield page
+        if len(page) < 100:
+            return
+        page_number += 1
+
+
 def resolve_release(tag, target):
+    if tag is not None and PRODUCT_TAG.fullmatch(tag):
+        with TemporaryDirectory(prefix="aiv-resolve-release-") as directory:
+            preview_manifest(Path(directory), tag, target)
+        return tag
+
     manifest, image, cli = ASSETS[target]
     required_assets = {manifest, image, "install-all-in-one.py", SUMS}
     if target == "linux/arm64":
         required_assets.add(cli)
-    pages = json.loads(output(
-        "gh", "api", "--hostname", "github.com", "--paginate", "--slurp",
-        f"repos/{REPO}/releases?per_page=100",
-    ))
-    releases = [
-        release for page in pages for release in page
-        if TAG.fullmatch(release["tag_name"]) and (tag is None or tag == release["tag_name"])
-        and release["prerelease"] and not release["draft"] and release["published_at"]
-        and required_assets <= {asset["name"] for asset in release["assets"] if asset["state"] == "uploaded"}
-    ]
+    required_product = required_assets | {cli, PRODUCT_MANIFEST}
+    releases = []
+    for page in release_pages():
+        for release in page:
+            current_tag = release["tag_name"]
+            if not TAG.fullmatch(current_tag) or (tag is not None and tag != current_tag):
+                continue
+            if release["draft"] or not release["prerelease"] or not release["published_at"]:
+                continue
+            required = required_product if PRODUCT_TAG.fullmatch(current_tag) else required_assets
+            if required <= {asset["name"] for asset in release["assets"] if asset["state"] == "uploaded"}:
+                releases.append(release)
     if not releases:
         raise ValueError(f"No published All-in-One release for {target} matches the request in {REPO}.")
     return max(releases, key=lambda release: (release["published_at"], release["id"]))["tag_name"]
@@ -101,6 +150,14 @@ def asset_identity(assets, name):
 
 
 def download(folder, tag, *names):
+    if PRODUCT_TAG.fullmatch(tag):
+        for name in names:
+            if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", name):
+                raise ValueError("Invalid Release asset name.")
+            request = Request(f"https://github.com/{REPO}/releases/download/{tag}/{name}")
+            with urlopen(request, timeout=60) as response, (folder / name).open("wb") as destination:
+                shutil.copyfileobj(response, destination, length=1024 * 1024)
+        return
     command = ["gh", "release", "download", tag, "--repo", f"github.com/{REPO}", "--dir", str(folder)]
     for name in names:
         command.extend(("--pattern", name))
@@ -123,13 +180,17 @@ def read_manifest(folder, selected, target):
     manifest_name, archive, client_archive = ASSETS[target]
     manifest = json.loads((folder / manifest_name).read_text(encoding="utf-8"))
     base = BASE.fullmatch(manifest["base_release"])
+    manifest_tag = manifest["release_tag"]
+    product = PRODUCT_TAG.fullmatch(manifest_tag)
+    expected_profile = PRODUCT_PROFILE if product else LEGACY_PROFILE
     if (
         manifest.get("schema_version") != 1
-        or manifest.get("profile") != PROFILE
+        or manifest.get("profile") != expected_profile
         or manifest.get("platform") != target
         or not TAG.fullmatch(manifest["release_tag"])
         or (selected is not None and manifest["release_tag"] != selected)
         or base is None
+        or (product and manifest["base_release"] != manifest_tag)
         or manifest.get("archive") != archive
         or not SHA256.fullmatch(manifest["archive_sha256"])
         or not require_size(manifest.get("archive_bytes"))
@@ -146,7 +207,7 @@ def read_manifest(folder, selected, target):
     ):
         raise ValueError("The manifest has an invalid zstd image archive.")
 
-    if target == "linux/arm64" or "agent_cli" in manifest:
+    if product or target == "linux/arm64" or "agent_cli" in manifest:
         client = manifest.get("agent_cli")
         if (
             not isinstance(client, dict)
@@ -205,11 +266,42 @@ def cached_image_archive(cache_dir, tag, name, digest, size):
     return archive
 
 
+def product_assets(folder, manifest):
+    path = folder / PRODUCT_MANIFEST
+    verify_file(path, sum_for(folder, PRODUCT_MANIFEST))
+    product = json.loads(path.read_text(encoding="utf-8"))
+    source = {key: product[key] for key in SOURCE_KEYS}
+    tag = manifest["release_tag"]
+    if (source != manifest.get("source_candidate") or source["source_repository"] != REPO
+            or source["release_tag"] != tag or product.get("product_version") != tag[1:]
+            or product.get("channel") != "daily"
+            or not re.fullmatch(r"[0-9a-f]{40}", source["source_sha"])
+            or not re.fullmatch(r"[1-9][0-9]*\.[1-9][0-9]*", source["build_id"])):
+        raise ValueError("The All-in-One source candidate differs from the product Release manifest.")
+    client = manifest["agent_cli"]
+    entries = [
+        (manifest["archive"], manifest["archive_sha256"], manifest["archive_bytes"]),
+        (client["archive"], client["archive_sha256"], client["archive_bytes"]),
+    ]
+    if "zstd_archive" in manifest:
+        entries.append((manifest["zstd_archive"], manifest["zstd_archive_sha256"], manifest["zstd_archive_bytes"]))
+    assets = {}
+    for name, digest, size in entries:
+        if sum_for(folder, name) != digest:
+            raise ValueError(f"SHA256SUMS differs from the manifest for {name}.")
+        assets[name] = {"digest": "sha256:" + digest, "size": size}
+    return assets
+
+
 def preview_manifest(folder, tag, target):
     name = ASSETS[target][0]
-    if tag is None:
+    if tag is None or PRODUCT_TAG.fullmatch(tag):
+        if tag is not None:
+            download(folder, tag, SUMS, PRODUCT_MANIFEST, name)
         verify_file(folder / name, sum_for(folder, name))
-        return read_manifest(folder, None, target), {}
+        manifest = read_manifest(folder, tag, target)
+        assets = product_assets(folder, manifest) if manifest["profile"] == PRODUCT_PROFILE else {}
+        return manifest, assets
 
     assets = published_assets(tag)
     digest, size = asset_identity(assets, name)
@@ -446,6 +538,10 @@ def sample_trace(args, target):
             if preview_manifest(folder, None, target)[0]["release_tag"] != tag:
                 raise ValueError(f"The local bundle does not match {args.name}'s release {tag}.")
             verify_file(folder / SAMPLE, sum_for(folder, SAMPLE))
+        elif PRODUCT_TAG.fullmatch(tag):
+            preview_manifest(folder, tag, target)
+            download(folder, tag, SAMPLE)
+            verify_file(folder / SAMPLE, sum_for(folder, SAMPLE))
         else:
             assets = published_assets(tag)
             digest, size = asset_identity(assets, SAMPLE)
@@ -493,7 +589,13 @@ def main():
             return 0
         deploying = not (args.resolve or args.resolve_cli or args.install_cli)
         zstd_supported = preflight(args, target) if deploying else False
-        tag = None if args.from_dir else resolve_release(args.tag, target)
+        if args.from_dir:
+            tag = None
+        elif args.tag and PRODUCT_TAG.fullmatch(args.tag) and not args.resolve:
+            # preview_manifest validates the exact product files before any installation.
+            tag = args.tag
+        else:
+            tag = resolve_release(args.tag, target)
         if args.resolve:
             print(tag)
             return 0

@@ -20,6 +20,8 @@ EARLY = "all-in-one-preview-v0.1.0-daily.20261112"
 LATEST = "all-in-one-preview-v0.1.0-daily.20261113"
 ARM_LATEST = "all-in-one-preview-v0.1.0-daily.20261113.2"
 BASE_RELEASE = "v0.1.0-daily.20261108"
+PRODUCT_TAG = "v0.6.0-daily.20261120.2"
+PRODUCT_MANIFEST = "release-manifest.json"
 AMD64 = "linux/amd64"
 ARM64 = "linux/arm64"
 AMD64_MANIFEST, AMD64_ARCHIVE, AMD64_CLI = installer.ASSETS[AMD64]
@@ -57,16 +59,13 @@ class ReleaseDiscoveryTests(unittest.TestCase):
             release("all-in-one-preview-v0.1.0-daily.20261119", "2026-11-19T10:00:00Z", 9,
                     target=ARM64, missing=(ARM64_CLI,)),
         ]]
-        fixture = patch.object(installer, "output", return_value=json.dumps(pages))
+        fixture = patch.object(installer, "release_pages", return_value=pages)
         self.addCleanup(fixture.stop)
         self.output = fixture.start()
 
     def test_discovery_filters_release_profile_and_checks_all_pages(self):
         self.assertEqual(installer.resolve_release(None, AMD64), LATEST)
-        self.output.assert_called_once_with(
-            "gh", "api", "--hostname", "github.com", "--paginate", "--slurp",
-            "repos/antgroup/ai-vision/releases?per_page=100",
-        )
+        self.output.assert_called_once_with()
 
     def test_exact_tag_selects_older_release_and_never_falls_back(self):
         self.assertEqual(installer.resolve_release(EARLY, AMD64), EARLY)
@@ -77,6 +76,14 @@ class ReleaseDiscoveryTests(unittest.TestCase):
         self.assertEqual(installer.resolve_release(None, ARM64), ARM_LATEST)
         with self.assertRaisesRegex(ValueError, "No published All-in-One release for linux/arm64"):
             installer.resolve_release(LATEST, ARM64)
+
+
+    def test_compatible_product_daily_is_selected_for_matching_host(self):
+        candidate = release(PRODUCT_TAG, "2026-11-20T10:00:00Z", 10, target=ARM64)
+        candidate["assets"].append({"name": PRODUCT_MANIFEST, "state": "uploaded"})
+        self.output.return_value.append([candidate])
+        self.assertEqual(installer.resolve_release(None, ARM64), PRODUCT_TAG)
+        self.assertEqual(installer.resolve_release(None, AMD64), LATEST)
 
 
 class PlatformTests(unittest.TestCase):
@@ -137,6 +144,61 @@ class PackageTests(unittest.TestCase):
         }
         (self.folder / AMD64_MANIFEST).write_text(json.dumps(self.manifest), encoding="utf-8")
         (self.folder / installer.SUMS).write_text(f"{self.manifest['archive_sha256']}  {AMD64_ARCHIVE}\n")
+
+    def set_product_files(self):
+        cli = b"fixture CLI"
+        source = {"source_repository": installer.REPO, "source_sha": "c" * 40,
+                  "release_tag": PRODUCT_TAG, "build_id": "17.2"}
+        product = {**source, "product_version": PRODUCT_TAG[1:], "channel": "daily"}
+        personal = {
+            **self.manifest, "profile": "all-in-one", "release_tag": PRODUCT_TAG,
+            "base_release": PRODUCT_TAG, "source_candidate": source,
+            "agent_cli": {"archive": AMD64_CLI, "version": PRODUCT_TAG[1:],
+                          "archive_sha256": hashlib.sha256(cli).hexdigest(),
+                          "archive_bytes": len(cli), "binary_sha256": "d" * 64},
+        }
+        files = {AMD64_MANIFEST: json.dumps(personal).encode(), PRODUCT_MANIFEST: json.dumps(product).encode(),
+                 AMD64_CLI: cli, AMD64_ARCHIVE: self.archive.read_bytes()}
+        files[installer.SUMS] = "".join(f"{hashlib.sha256(data).hexdigest()}  {name}\n"
+                                        for name, data in files.items()).encode()
+        for name, data in files.items():
+            (self.folder / name).write_bytes(data)
+        return personal, files
+
+    def test_explicit_product_daily_resolves_from_public_files_without_listing(self):
+        personal, files = self.set_product_files()
+        def download(folder, tag, *names):
+            self.assertEqual(tag, PRODUCT_TAG)
+            for name in names:
+                (folder / name).write_bytes(files[name])
+        with patch.object(installer, "download", side_effect=download), patch.object(
+            installer, "published_assets", side_effect=AssertionError("API not expected"),
+        ), patch.object(installer, "release_pages", side_effect=AssertionError("listing not expected")):
+            self.assertEqual(installer.resolve_release(PRODUCT_TAG, AMD64), PRODUCT_TAG)
+            measured, assets = installer.preview_manifest(self.folder, PRODUCT_TAG, AMD64)
+            self.assertEqual(measured, personal)
+            self.assertEqual(installer.asset_identity(assets, AMD64_CLI),
+                             (personal["agent_cli"]["archive_sha256"], len(files[AMD64_CLI])))
+
+    def test_product_manifest_wrong_source_is_rejected_even_with_valid_checksums(self):
+        _, files = self.set_product_files()
+        product = json.loads(files[PRODUCT_MANIFEST])
+        product["build_id"] = "18.1"
+        product_bytes = json.dumps(product).encode()
+        (self.folder / PRODUCT_MANIFEST).write_bytes(product_bytes)
+        (self.folder / installer.SUMS).write_bytes(files[installer.SUMS].replace(
+            hashlib.sha256(files[PRODUCT_MANIFEST]).hexdigest().encode(),
+            hashlib.sha256(product_bytes).hexdigest().encode(),
+        ))
+        with self.assertRaisesRegex(ValueError, "source candidate differs"):
+            installer.preview_manifest(self.folder, None, AMD64)
+
+    def test_exact_product_resolution_rejects_a_conflicting_archive_checksum(self):
+        personal, _ = self.set_product_files()
+        sums = self.folder / installer.SUMS
+        sums.write_text(sums.read_text().replace(personal["archive_sha256"], "e" * 64))
+        with self.assertRaisesRegex(ValueError, "SHA256SUMS differs from the manifest"):
+            installer.preview_manifest(self.folder, None, AMD64)
 
     def test_verified_package_keeps_the_image_identity_and_base_release(self):
         self.assertEqual(installer.read_manifest(self.folder, LATEST, AMD64), self.manifest)
@@ -235,6 +297,18 @@ class PackageTests(unittest.TestCase):
             self.assertEqual(installer.cached_image_archive(cache, LATEST, name, digest, size), cached)
         self.assertEqual(fetch.call_count, 1)
         self.assertEqual(cached.read_bytes(), data)
+
+
+    def test_product_download_uses_exact_public_url_without_gh(self):
+        payload = b"verified elsewhere"
+        with patch.object(installer, "urlopen", return_value=io.BytesIO(payload)) as http, patch.object(
+            installer.subprocess, "run", side_effect=AssertionError("gh not expected"),
+        ):
+            installer.download(self.folder, PRODUCT_TAG, AMD64_MANIFEST)
+        self.assertEqual(http.call_args.args[0].full_url,
+                         f"https://github.com/antgroup/ai-vision/releases/download/{PRODUCT_TAG}/{AMD64_MANIFEST}")
+        self.assertFalse(http.call_args.args[0].has_header("Authorization"))
+        self.assertEqual((self.folder / AMD64_MANIFEST).read_bytes(), payload)
 
 
 class CliTests(unittest.TestCase):

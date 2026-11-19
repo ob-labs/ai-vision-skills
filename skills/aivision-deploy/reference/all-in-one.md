@@ -17,18 +17,19 @@ unused ports if another service already uses either one.
 ### Run the installer directly
 
 Check [AI Vision Releases](https://github.com/antgroup/ai-vision/releases) for
-an All-in-One release with the assets for your host. In an empty directory,
-set `release_tag` to its exact tag and use `gh` to download the installer and
-checksum list. Sign in to GitHub CLI if prompted. Until a matching bundle is
-published, use a trusted local bundle, a compatible
-[distributed release](../SKILL.md#choose-release-or-daily), or an existing
-instance.
+a versioned Daily with the All-in-One assets for your host. Set `release_tag` to
+that exact `vX.Y.Z-daily.YYYYMMDD[.N]` tag. Download and verify the installer in
+an empty directory. Versioned public downloads work without GitHub login.
+If the selected version has no matching bundle, use a trusted local bundle, a
+compatible [distributed release](../SKILL.md#choose-release-or-daily), or an
+existing instance.
 
 ```sh
-: "${release_tag:?Set this to the exact All-in-One release tag}"
+: "${release_tag:?Set this to the exact All-in-One Daily tag}"
+release_url="https://github.com/antgroup/ai-vision/releases/download/$release_tag"
 installer=./install-all-in-one.py
-gh release download "$release_tag" --repo antgroup/ai-vision \
-  --pattern install-all-in-one.py --pattern SHA256SUMS &&
+curl -fLsS --proto '=https' --proto-redir '=https' -o "$installer" "$release_url/install-all-in-one.py" &&
+  curl -fLsS --proto '=https' --proto-redir '=https' -o SHA256SUMS "$release_url/SHA256SUMS" &&
   (grep -E '^[0-9a-f]{64}  install-all-in-one\.py$' SHA256SUMS | sha256sum --check) &&
   python3 "$installer" --tag "$release_tag"
 ```
@@ -38,7 +39,8 @@ gh release download "$release_tag" --repo antgroup/ai-vision \
 From the installed `aivision-deploy` Skill, set `AIV_SKILL_DIR` to the absolute
 path of that directory. Use the same product repository. Resolve and display the tag
 before installing. Without `--tag`, the installer uses the most recently
-published compatible All-in-One release.
+published compatible All-in-One Daily. If GitHub rate-limits discovery, find a
+compatible version on the Release page and pass its exact tag directly.
 
 ```sh
 : "${AIV_SKILL_DIR:?Set this to the installed aivision-deploy directory}"
@@ -66,18 +68,21 @@ is running. The named data volume is separate from this cache.
 For a local or offline install, transfer the complete verified candidate or the
 matching [product Release](https://github.com/antgroup/ai-vision/releases)
 assets into a single directory. Use the installer bundled with this Skill or
-the verified release installer. The asset directory needs `SHA256SUMS` and
-the files for your host listed below.
+the verified release installer. For a product Daily bundle, include its
+`SHA256SUMS`, `release-manifest.json` and the files for your host listed below.
+Trusted older offline bundles keep their original manifests and filenames.
 
 | Docker host | Manifest | Choose one image archive | CLI |
 |---|---|---|---|
-| Linux x86-64 | `all-in-one-manifest.json` | `aiv-all-in-one-linux-amd64.tar.zst` or `.tar.gz` | `aiv-linux-x64.tar.gz` when included |
+| Linux x86-64 | `all-in-one-manifest.json` | `aiv-all-in-one-linux-amd64.tar.zst` or `.tar.gz` | `aiv-linux-x64.tar.gz` |
 | Linux ARM64 | `all-in-one-manifest-arm64.json` | `aiv-all-in-one-linux-arm64.tar.zst` or `.tar.gz` | `aiv-linux-arm64.tar.gz` |
 
 Verify the files before running the installer. This path works without `gh` on
 the Docker host. Check that your host's manifest and chosen image archive are
 present and report `OK`. Check the CLI archive and sample helper as well if you
 plan to use them. The checksum command skips files for other architectures.
+Use `--archive-format gzip` when the directory contains only the gzip archive
+or the Docker server does not support the zstd archive.
 
 ```sh
 : "${installer:?Set this to the absolute path to install-all-in-one.py}"
@@ -155,7 +160,8 @@ an installation authorization.
    ```
 
    For an offline Agent machine, transfer the installer, `SHA256SUMS`, the
-   manifest for that architecture and its matching CLI archive. Use
+   manifest for that architecture and its matching CLI archive. Include
+   `release-manifest.json` for a product Daily. Use
    `python3 "$installer" --from-dir "$PWD" --install-cli` from that directory.
    The CLI-only install requires no Docker. An older x86-64 bundle whose CLI
    came from a separate base release needs a verified copy
