@@ -1,0 +1,66 @@
+skills/aivision-quickstart/agents/openai.yaml
+  s_80270f50a78a8e::t_222831b53758fd 3
+README.md
+  s_80270f50a78a8e::t_9f070790dbfa2d 9,29
+  s_80270f50a78a8e::t_aba8083873aeec 22
+README.ja-JP.md
+  s_80270f50a78a8e::t_aba8083873aeec 22
+  s_80270f50a78a8e::t_9f070790dbfa2d 9,29
+skills/aivision-metric/SKILL.md
+  s_80270f50a78a8e::t_20a618345d19b7 3,14,23-25,46-48,63-65,76-79
+docs/distribution.md
+  s_80270f50a78a8e::t_9f070790dbfa2d 27-30
+skills/aivision-quickstart/reference/workflow.md
+  s_80270f50a78a8e::t_faacecbcb0707f 72,101-106,127-132
+  s_80270f50a78a8e::t_222831b53758fd 18-20,25-26,76-80,82-83,91-96,134-139,142-149,208-210
+skills/aivision-trace/reference/dataset-export.md
+  s_80270f50a78a8e::t_20a618345d19b7 18-23
+skills/aivision-metric/reference/query-setup.md
+  s_80270f50a78a8e::t_20a618345d19b7 79-81
+README.zh-CN.md
+  s_80270f50a78a8e::t_9f070790dbfa2d 9,29
+  s_80270f50a78a8e::t_aba8083873aeec 22
+AGENTS.md
+  s_80270f50a78a8e::t_95245dff80b621 7
+skills/aivision-deploy/SKILL.md
+  s_80270f50a78a8e::t_b9a5848c718638 3,16,18,20-24,28,74-75,383,401-402,415
+  s_80270f50a78a8e::t_95245dff80b621 46-47
+skills/aivision-metric/reference/local-aggregation.md
+  s_80270f50a78a8e::t_20a618345d19b7 3-5,19-21
+skills/aivision-deploy/scripts/sample-trace.py
+  s_80270f50a78a8e::t_b9a5848c718638 2
+skills/README.md
+  s_80270f50a78a8e::t_9f070790dbfa2d 8
+tests/test_all_in_one_install.py
+  s_80270f50a78a8e::t_b9a5848c718638 73,78,151,185,326,358
+skills/aivision-quickstart/reference/query-setup.md
+  s_80270f50a78a8e::t_aba8083873aeec 79-81
+skills/aivision-trace/SKILL.md
+  s_80270f50a78a8e::t_20a618345d19b7 3,13,22-24,45-48,52-54
+skills/aivision-deploy/scripts/install-all-in-one.py
+  s_80270f50a78a8e::t_b9a5848c718638 2,67,139,159,175,235,296,389-390,392,428,442,447,461,464,482,484
+skills/aivision-quickstart/SKILL.md
+  s_80270f50a78a8e::t_faacecbcb0707f 20,23-24,30
+  s_80270f50a78a8e::t_222831b53758fd 3,8-13,19,21,25,29,32-43
+skills/aivision-deploy/reference/all-in-one.md
+  s_80270f50a78a8e::t_b9a5848c718638 1,3,20-25,28,30,33,41,46-48,51,68-70,83,86,107-111,135,137,142,146-148,151,153-154,158-161,196-198
+  s_80270f50a78a8e::t_95245dff80b621 11-14,57-58,78-80,143-145
+skills/aivision-trace/reference/query-setup.md
+  s_80270f50a78a8e::t_20a618345d19b7 79-81
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "342c732e4d39895fef748e4dbe4fd81f556c9c72",
+  "prompts": {},
+  "sessions": {
+    "s_80270f50a78a8e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f19d-1985-7b22-82e9-068aafc03da7",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "Haili Zhang <2936504+webup@users.noreply.github.com>"
+    }
+  }
+}
