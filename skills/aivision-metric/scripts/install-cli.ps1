@@ -10,8 +10,8 @@ if ($tag -and $tag -cnotmatch '^v[0-9][A-Za-z0-9.-]*$') { throw 'Set AIV_TAG to 
 $channel = if ($env:AIV_CHANNEL) { $env:AIV_CHANNEL } elseif ($tag -clike '*-daily.*') { 'daily' } else { 'stable' }
 if ($channel -cnotin @('daily', 'stable')) { throw 'Select AIV_CHANNEL=daily or AIV_CHANNEL=stable.' }
 if ($Mode -eq 'Install' -and -not $tag) { throw 'Resolve a compatible release, then set AIV_TAG to its exact tag before installing.' }
-$curl = Get-Command curl.exe -CommandType Application -ErrorAction SilentlyContinue
-if (-not $curl) { $curl = Get-Command curl -CommandType Application }
+$curl = Get-Command curl.exe -CommandType Application -TotalCount 1 -ErrorAction SilentlyContinue
+if (-not $curl) { $curl = Get-Command curl -CommandType Application -TotalCount 1 }
 Get-Command jq | Out-Null
 
 function Get-PublicFile([string] $Url, [string] $Path) {
