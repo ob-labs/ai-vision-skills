@@ -1,0 +1,25 @@
+skills/aivision-deploy/scripts/install-cli.ps1
+  s_80270f50a78a8e::t_161763330fe25f 13-14
+skills/aivision-metric/scripts/install-cli.ps1
+  s_80270f50a78a8e::t_161763330fe25f 13-14
+skills/aivision-trace/scripts/install-cli.ps1
+  s_80270f50a78a8e::t_161763330fe25f 13-14
+skills/aivision-quickstart/scripts/install-cli.ps1
+  s_80270f50a78a8e::t_161763330fe25f 13-14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "68a0559da2e150179351203208917600f0682313",
+  "prompts": {},
+  "sessions": {
+    "s_80270f50a78a8e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f19d-1985-7b22-82e9-068aafc03da7",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "Haili Zhang <2936504+webup@users.noreply.github.com>"
+    }
+  }
+}
