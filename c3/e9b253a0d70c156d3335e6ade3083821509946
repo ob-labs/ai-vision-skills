@@ -1,0 +1,28 @@
+tests/test_all_in_one_install.py
+  s_80270f50a78a8e::t_eb0684dd840adf 23-24,31,40-41,84-94
+  s_80270f50a78a8e::t_3b2cb6298eeb5b 255-319,321-331,333-335,337-348,350-351,353-366
+  s_80270f50a78a8e::t_5d6211146bf445 320,332,336,349,352
+  s_80270f50a78a8e::t_ac03f453d01e4e 95
+skills/aivision-deploy/reference/all-in-one.md
+  s_80270f50a78a8e::t_7aff32f2ceb1b2 20-24,42-43,55-57,72-73,77,81-84,111-115,128-133,161-163
+skills/aivision-deploy/SKILL.md
+  s_80270f50a78a8e::t_b85e9cc33741ef 16
+skills/aivision-deploy/scripts/install-all-in-one.py
+  s_80270f50a78a8e::t_0d49fc30296391 22-26,28,39-40,61,70-71,133-134,137,139-140,142,159,218-245,247-255,257-260,269,274,288,488,492-493,495-496,547
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "c3e9b253a0d70c156d3335e6ade3083821509946",
+  "prompts": {},
+  "sessions": {
+    "s_80270f50a78a8e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f19d-1985-7b22-82e9-068aafc03da7",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "Haili Zhang <2936504+webup@users.noreply.github.com>"
+    }
+  }
+}
