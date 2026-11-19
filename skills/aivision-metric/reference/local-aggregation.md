@@ -1,8 +1,8 @@
 # Local aggregation of CLI trace details
 
-Use `aiv query trace metrics` for native whole-window trace aggregates, even
-when raw SQL is unavailable. Its 10,000-trace scan ceiling fails explicitly,
-and its result must have `meta.complete: true`; usage coverage remains separate.
+Use `aiv query trace metrics` for native whole-window trace aggregates. Verify
+`meta.complete: true` and inspect usage coverage. If the backend returns the
+10,000-trace scan limit, record the error and the requested bounds.
 
 Use this local path for a requested custom detail analysis or when the native
 aggregate endpoint is unavailable and full trace list/detail retrieval can be
@@ -16,9 +16,9 @@ this separate method.
 Resolve the requested endpoint, profile, space, agent product and Agent UUID
 once. For instance-specific comparisons, native metrics uses `--agent-uuid`,
 while metadata/list/get/export/session commands use `--param
-agent_uuid="$AGENT_UUID"`. Apply the same selector throughout; `--agent-product`
-does not select an instance. Omit UUID only for a product-wide request. For each
-scope, choose one absolute UTC `SINCE`/`UNTIL` pair and a bounded time window.
+agent_uuid="$AGENT_UUID"`. Apply the same selector throughout. For a product
+with multiple instances, read each relevant Agent UUID and record the coverage.
+For each scope, choose one absolute UTC `SINCE`/`UNTIL` pair and a bounded time window.
 The CLI accepts RFC3339 or epoch seconds/milliseconds and sends milliseconds.
 Do not pass epoch nanoseconds as CLI bounds. Relative values such as `1h` and
 `now` are useful interactively but would move between pagination requests.

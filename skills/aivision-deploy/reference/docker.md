@@ -21,10 +21,8 @@ First [prepare the fixed history start](../SKILL.md#fix-the-history-start-before
 in `./aivision.vars.yaml`. Generate it once only for confirmed empty storage;
 reuse the saved timestamp for retained data and all subsequent casts. Merge the
 selected published Release or Daily's [verified image variables](prerequisites.md#resolve-the-version-and-download-matching-assets)
-into that same private file, preserving its other settings. For restricted Daily
-use a Linux x86 Docker daemon. If Apple Silicon or Windows x64 Agent clients
-are requested, verify the [compatible backend configuration](prerequisites.md#select-the-agent-client-backend-configuration)
-for the selected base and datastore before merging. For explicitly
+into that same private file, preserving its other settings. Confirm the selected
+images and datastore support the Docker daemon platform. For explicitly
 requested source images, follow [source build identity and verification](prerequisites.md#source-build-identity-and-verification)
 and use `IMAGE_PULL=missing` in the command below for unpublished local images.
 
@@ -75,7 +73,7 @@ flags retain their existing precedence.
 | Bundled OceanBase seekdb (lightweight option) | merge the verified `release-seekdb.vars.yaml`, including its backend and database image |
 | An OceanBase CE or seekdb you already run | keep `OB_MANAGED: "false"` and existing connection settings in that vars file; use `OB_BACKEND=seekdb` for seekdb |
 | Install a Release or Daily | Resolve a compatible published base and merge its verified datastore vars into the same private vars file |
-| Enable Apple Silicon or Windows x64 Agent onboarding | Merge the verified [client preview backend configuration](prerequisites.md#select-the-agent-client-backend-configuration) for the exact base and datastore |
+| Connect a coding Agent from another OS or host | Check the [supported installer and client runtime](prerequisites.md#native-agent-client-runtime) on that machine and confirm it can reach the deployment |
 | Kubernetes | `--target kubernetes --context <context>` — see [kubernetes](kubernetes.md) |
 | A second, isolated stack on the same host | `--namespace <name>` plus the port overrides below |
 
@@ -405,16 +403,14 @@ for new and retained traces, organization identity, canaries, mounts and image I
 The restricted native CLI supports CLI-managed `--target compose` with
 matching native variables. It rejects standalone `--compose-file` before Docker
 or deployment-state mutation. Generic standalone Compose instructions apply to
-ordinary source builds, not this private native delivery.
+ordinary source-compatible CLI builds.
 
 ## Agent machine onboarding
 
-Check the [native Agent client runtime](prerequisites.md#native-agent-client-runtime)
-on the Agent machine first. Verify that the deployed backend serves that client's
-installer. On Linux x64, require glibc 2.35 or newer. For Apple Silicon or
-Windows x64, use the matching published preview CLI and
-[backend configuration](prerequisites.md#select-the-agent-client-backend-configuration).
-Record deployment and Agent client platforms separately.
+Check the [Agent client runtime](prerequisites.md#native-agent-client-runtime)
+on the Agent machine first. Verify that the deployed backend serves the
+installer for that Agent, operating system and architecture. Record deployment
+and client platforms separately.
 
 Use the machine and user account that run the target coding Agent:
 
@@ -426,14 +422,12 @@ Use the machine and user account that run the target coding Agent:
    `--collection-mode`. If a required command or flag is missing, follow the
    [CLI installation or upgrade steps](prerequisites.md#install-or-upgrade-the-cli-when-needed)
    and repeat the help check before generating an authorization.
-   Use the selected Daily's native Agent installer; it does not require
-   user-installed Python. Confirm the deployed platform actually serves that
-   native installer before continuing. An older Python-based hook is a separate
-   compatibility path, not a reason to add a Python prerequisite to this native
-   flow. The host Agent must be installed and configured.
-2. Open the deployed Web URL, register/sign in, and choose the target Agent's
-   onboarding guide. Generate the installation command **after** the client
-   prerequisites are ready. Run that complete command unchanged in the Agent
+   Follow the selected version's integration prerequisites, including Python
+   where the source-compatible installer requires it. The host Agent must be
+   installed and configured.
+2. [Register or sign in](operations.md#register-or-sign-in) at the deployed Web
+   URL and choose the target Agent's onboarding guide. Generate the installation
+   command **after** the client prerequisites are ready. Run it in the Agent
    machine's terminal. This Web-issued command contains an explicit one-use
    installation authorization and does not require `aiv auth login`. It expires
    after 15 minutes; if rejected as expired or already used, generate a new

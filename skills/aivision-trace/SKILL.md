@@ -1,6 +1,6 @@
 ---
 name: aivision-trace
-description: Use when inspecting AI Vision LLM traces or span trees, debugging a conversation, exporting production telemetry for replay, or curating evaluation records with session context and token usage.
+description: Use the aiv CLI to inspect AI Vision traces, span trees, and sessions, investigate slow or failed requests, or export telemetry for replay and evaluation.
 ---
 
 # AI Vision Trace
@@ -10,19 +10,18 @@ query scope and full source evidence through selection, export and curation.
 
 ## Prerequisites
 
-Expose an existing default installation before downloading anything:
+Check the active CLI and the commands you need:
 
 ```bash
-export PATH="$HOME/.local/bin:$PATH"
 command -v aiv
 aiv --version
 aiv query metadata --help
 aiv query trace list --help
 ```
 
-If the binary is missing, cannot run, or lacks the required command/flags, follow
-[reference/install-cli.md](reference/install-cli.md). Check the selected path and
-help again after installing a compatible release; a printed version is insufficient.
+If `aiv` is missing or lacks a required command, use
+[reference/install-cli.md](reference/install-cli.md) to locate or install a
+compatible CLI. Use `Get-Command aiv` to check the path in PowerShell.
 
 Reuse the confirmed `PROFILE`, endpoint and space. Set `AGENT_PRODUCT` and,
 for an instance request, `AGENT_UUID` from the existing platform Agent details
@@ -43,16 +42,16 @@ scope before widening a window or inferring that collection is broken.
 Set `PROFILE` to the confirmed profile and resolve the requested time range
 **once** into absolute RFC3339 or epoch `SINCE` / `UNTIL` values. Reuse those
 exact values for every list, export, session usage and log query. Put all flags
-before positional IDs, especially when passing multiple session IDs. For an
-instance-specific task, set `AGENT_UUID` and pass `--param agent_uuid="$AGENT_UUID"`
-to each query; `--agent-product` selects a product, not an instance. Metrics alone
-has a dedicated `--agent-uuid` flag. Carry a requested source via `--param
-source_system=...` too, and check returned identities and effective bounds.
+before positional IDs, especially when passing multiple session IDs. Pass
+`--param agent_uuid="$AGENT_UUID"` to each query about that instance. When the
+endpoint supports a source override, pass `--param source_system=...` for a
+requested source. Check the returned identities, source and effective bounds.
 
 Create a new private directory outside the repository; `-o` overwrites existing
 files, so keep unique filenames for pages, details and retries. The commands
-below select one confirmed instance. For an explicitly product-wide request,
-omit the UUID check and selector together.
+below select one confirmed instance. For a product with multiple instances,
+query each relevant Agent UUID explicitly and record which instances were read.
+A product name alone can select a default route.
 
 ```bash
 : "${PROFILE:?Select a profile}" "${AGENT_PRODUCT:?Confirm the Agent product}" \
@@ -81,7 +80,6 @@ aiv query trace get --profile "$PROFILE" --agent-product "$AGENT_PRODUCT" \
 
 For native detail queries, `FROM_MS` / `TO_MS` are the frozen bounds in epoch
 milliseconds, obtainable from the verified list response's `meta.from` / `meta.to`.
-Omit the UUID selector only for an explicitly requested product-wide result.
 
 Start with default fields. Choose projections and predicates from metadata and
 the actual response schema, then verify that returned rows satisfy the filter.

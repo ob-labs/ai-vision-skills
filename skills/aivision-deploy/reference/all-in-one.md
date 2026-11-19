@@ -1,6 +1,6 @@
-# AI Vision All-in-One Preview
+# AI Vision All-in-One Personal Edition
 
-Choose All-in-One for a quick trial or personal use. One container starts AI
+Use All-in-One for a personal installation. One container starts AI
 Vision with embedded seekdb, and one named Docker volume holds its data. Use
 the [distributed deployment](../SKILL.md#choose-a-deployment-mode) for a shared
 installation, an external database, or an existing distributed stack.
@@ -8,56 +8,54 @@ installation, an external database, or an existing distributed stack.
 ## Install and open AI Vision
 
 Use a **Linux x86-64 or ARM64** machine or VM with Python 3.8+ and access to a
-local Docker daemon of the same architecture. The installer selects assets
-for the native Linux architecture. Online installation requires a published
-preview with a complete asset set for that architecture. A verified local
-preview bundle also supports offline installation.
-The preview uses 2 CPU and a 6 GiB container memory limit.
-Allow 6 GiB for the container and disk space for the image and growing data
-volume. Ports `5174` for Web and `4318` for OTLP/HTTP bind to loopback. Choose
+local Docker daemon of the same architecture. Choose an online release or a
+verified local bundle with assets for that host. Allow up to 2 CPUs and 6 GiB
+of memory for the container, plus disk space for the image and growing data
+volume. The web port `5174` and OTLP/HTTP port `4318` bind to loopback. Choose
 unused ports if another service already uses either one.
 
 ### Run the installer directly
 
-Authenticate `gh` on `github.com` with an account that can read the private
-`ob-labs/ai-vision-skills` repository. From an empty directory, set `preview_tag`
-to the exact tag from the [All-in-One preview Release](https://github.com/ob-labs/ai-vision-skills/releases).
-Download that release's installer and checksum, then run it. Check that the
-selected release offers the format and sample features you want to use.
+Check [AI Vision Releases](https://github.com/antgroup/ai-vision/releases) for
+an All-in-One release with the assets for your host. In an empty directory,
+set `release_tag` to its exact tag and use `gh` to download the installer and
+checksum list. Sign in to GitHub CLI if prompted. Until a matching bundle is
+published, use a trusted local bundle, a compatible
+[distributed release](../SKILL.md#choose-release-or-daily), or an existing
+instance.
 
 ```sh
-: "${preview_tag:?Set this to the All-in-One preview tag}"
+: "${release_tag:?Set this to the exact All-in-One release tag}"
 installer=./install-all-in-one.py
-gh release download "$preview_tag" --repo ob-labs/ai-vision-skills \
+gh release download "$release_tag" --repo antgroup/ai-vision \
   --pattern install-all-in-one.py --pattern SHA256SUMS &&
   (grep -E '^[0-9a-f]{64}  install-all-in-one\.py$' SHA256SUMS | sha256sum --check) &&
-  python3 "$installer" --tag "$preview_tag"
+  python3 "$installer" --tag "$release_tag"
 ```
 
 ### Install with a coding Agent
 
 From the installed `aivision-deploy` Skill, set `AIV_SKILL_DIR` to the absolute
-path of that directory. Use the same `gh` access. Resolve and display the tag
+path of that directory. Use the same product repository. Resolve and display the tag
 before installing. Without `--tag`, the installer uses the most recently
-published compatible preview.
+published compatible All-in-One release.
 
 ```sh
 : "${AIV_SKILL_DIR:?Set this to the installed aivision-deploy directory}"
 installer="$AIV_SKILL_DIR/scripts/install-all-in-one.py"
-preview_tag=$(python3 "$installer" --resolve) &&
-  printf 'Installing %s\n' "$preview_tag" &&
-  python3 "$installer" --tag "$preview_tag"
+release_tag=$(python3 "$installer" --resolve) &&
+  printf 'Installing %s\n' "$release_tag" &&
+  python3 "$installer" --tag "$release_tag"
 ```
 
-Keep `preview_tag` for retries and recreation. The installer checks the Docker
+Keep `release_tag` for retries and recreation. The installer checks the Docker
 daemon, instance name and local ports before downloading. It verifies the
 selected archive and loads it into Docker. This installation uses Release
 assets and embedded seekdb.
 
 On Docker Server 23 or later, the installer prefers a verified `.tar.zst`
-image archive when the selected preview offers it. Older servers and older
-previews can use `.tar.gz`. With a dual-format installer, set
-`--archive-format gzip` to request gzip explicitly. The online installer
+archive when available. The `.tar.gz` archive also works with older servers.
+Set `--archive-format gzip` to request gzip explicitly. The online installer
 caches verified downloads under
 `${XDG_CACHE_HOME:-$HOME/.cache}/aivision/all-in-one` and reuses an exact image
 already loaded in Docker on `auto`. Cache files can be removed when no install
@@ -66,9 +64,10 @@ is running. The named data volume is separate from this cache.
 ### Install offline
 
 For a local or offline install, transfer the complete verified candidate or the
-matching [private Release](https://github.com/ob-labs/ai-vision-skills/releases)
-assets into a single directory. Both architectures need `install-all-in-one.py`
-and `SHA256SUMS`.
+matching [product Release](https://github.com/antgroup/ai-vision/releases)
+assets into a single directory. Use the installer bundled with this Skill or
+the verified release installer. The asset directory needs `SHA256SUMS` and
+the files for your host listed below.
 
 | Docker host | Manifest | Choose one image archive | CLI |
 |---|---|---|---|
@@ -76,20 +75,21 @@ and `SHA256SUMS`.
 | Linux ARM64 | `all-in-one-manifest-arm64.json` | `aiv-all-in-one-linux-arm64.tar.zst` or `.tar.gz` | `aiv-linux-arm64.tar.gz` |
 
 Verify the files before running the installer. This path works without `gh` on
-the Docker host. If an authorized Release contains both architectures and you
-only download one set, use `sha256sum --check --ignore-missing SHA256SUMS`.
-Confirm every file in your set is present and reports `OK`.
+the Docker host. Check that your host's manifest and chosen image archive are
+present and report `OK`. Check the CLI archive and sample helper as well if you
+plan to use them. The checksum command skips files for other architectures.
 
 ```sh
+: "${installer:?Set this to the absolute path to install-all-in-one.py}"
 cd /path/to/all-in-one-release-assets
 sha256sum --check --ignore-missing SHA256SUMS &&
-  python3 ./install-all-in-one.py --from-dir "$PWD"
+  python3 "$installer" --from-dir "$PWD"
 ```
 
 Use `--name`, `--web-port`, and `--otlp-port` for a separate trial. Record the
 actual name, version, ports, and the corresponding `<name>-data` volume.
 When the installer reports healthy, open `http://127.0.0.1:5174` or the
-reported Web URL. Register or sign in through the Web UI.
+reported Web URL. Follow the [account registration and first-use handoff](../SKILL.md#help-the-user-sign-in-and-get-started).
 
 If the browser or Agent runs outside the VM, run the following from that
 client machine and keep the SSH connection open. Use the same port numbers as
@@ -104,11 +104,11 @@ ssh -N -o ExitOnForwardFailure=yes \
 
 ## View a sample Trace
 
-If the installed preview includes `sample-trace.py`, register in the Web UI
-and run its installer once more with `--sample-trace` in a terminal on the
-Linux Docker host. This creates a small synthetic Trace to explore the UI and
-makes zero model calls. Continue to Agent onboarding below if your preview
-does not include the sample helper.
+If the release or offline bundle includes `sample-trace.py`, sign in to AI
+Vision and run the installer with `--sample-trace` on the Linux Docker host.
+This creates a synthetic Trace to explore the UI with zero model calls.
+If the sample helper is unavailable, use the built-in guide or connect an
+Agent below.
 
 Use the installer path from the installation step. If you opened a new shell
 after installing from the Skill, set `installer` to the Skill's script again.
@@ -132,32 +132,33 @@ diagnosis. Connect your own Agent below when you want to see its telemetry.
 
 Run `getconf GNU_LIBC_VERSION` on the Linux Agent machine and require glibc
 2.35 or later. Match the CLI to the **Agent machine's** CPU. Check the
-qualification of the selected preview for its matching native Agent payload.
+selected release for its matching native Agent payload.
 The Docker host, browser and Agent can be different machines. For a different
-client OS, check the published backend and client combination in the
-[distributed guide](prerequisites.md#select-the-agent-client-backend-configuration).
+client OS, verify that the selected release supports it before generating
+an installation authorization.
 
 1. Install or reuse the matching Linux `aiv` on the Agent machine. Copy the
    All-in-One installer there, or set `installer` to the script in the locally
-   installed `aivision-deploy` Skill. Use the exact `preview_tag` that installed
-   the platform. The installer selects the matching CLI for the Agent machine, verifies its
-   SHA-256, architecture and version, and installs it to `~/.local/bin/aiv`.
-   It uses the preview's own CLI archive when included. For an older x86-64
-   preview that lists a base release, the online installer finds that exact
-   base release's verified x86-64 CLI.
+   installed `aivision-deploy` Skill. Use the exact `release_tag` that installed
+   the platform. The installer selects the matching CLI for the Agent machine,
+   verifies its SHA-256, architecture and version, and installs it to
+   `~/.local/bin/aiv`.
+   It uses the bundle's CLI archive when included. For older x86-64 bundles
+   with a separate base release, the installer verifies the CLI from that
+   exact base release.
 
    ```sh
-   : "${preview_tag:?Set this to the exact All-in-One preview tag}"
+   : "${release_tag:?Set this to the exact All-in-One release tag}"
    installer="${installer:-./install-all-in-one.py}"
-   python3 "$installer" --tag "$preview_tag" --resolve-cli &&
-     python3 "$installer" --tag "$preview_tag" --install-cli
+   python3 "$installer" --tag "$release_tag" --resolve-cli &&
+     python3 "$installer" --tag "$release_tag" --install-cli
    ```
 
    For an offline Agent machine, transfer the installer, `SHA256SUMS`, the
-   preview manifest for that architecture and its matching CLI archive. From
-   that directory, use `python3 ./install-all-in-one.py --from-dir "$PWD"
-   --install-cli`. The CLI-only install requires no Docker. An older x86-64
-   preview whose CLI came from a separate base release needs a verified copy
+   manifest for that architecture and its matching CLI archive. Use
+   `python3 "$installer" --from-dir "$PWD" --install-cli` from that directory.
+   The CLI-only install requires no Docker. An older x86-64 bundle whose CLI
+   came from a separate base release needs a verified copy
    of that base CLI brought to the offline machine. Complete
    [PATH setup](prerequisites.md#finish-durable-path-setup), and verify
    `command -v aiv`, `aiv --version` and `aiv connect --help`. The platform
@@ -192,8 +193,6 @@ reattaches `aiv-all-in-one-data` at `/data` by default. This volume holds local
 accounts, configuration, Traces and diagnosis records. Keep it when replacing
 the container. Sign in again and read back a known Trace after recreation.
 
-Use the same-version procedure above for the preview. For example, recreate
-an existing deployment using its recorded original tag even after another
-preview has been published. Use a new `--name` and unused ports to try a
-different tag alongside it. Cross-version preview upgrades and moving
-existing distributed data into this volume need separate validation.
+Pin the recorded release tag for recreation. To try a different release
+alongside it, use a new `--name` and unused ports. Upgrades across releases
+and migration from a distributed deployment require separate validation.

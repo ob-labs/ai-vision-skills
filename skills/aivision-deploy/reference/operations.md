@@ -78,6 +78,36 @@ metastore, configuration and image set before restarting. Reverse migrations
 cannot recover deleted data. Resolve a missing backup method/destination before
 mutation; do not automatically roll back or replace current tables with old DDL.
 
+## Register or sign in
+
+Use the Web URL reported by the deployment, reachable from the user's browser.
+For a new local account, open `/register` or choose **Create an account**
+from `/login`. Let the user enter their name, email and password. Successful
+registration signs them in and provisions a personal Space. Existing users open
+`/login`. For a team Space, have them accept its administrator's invitation
+and then select it in the Space switcher. If public registration is disabled,
+use an authorized account or the team's invitation flow.
+
+For a terminal-based start with a compatible installed `aiv`, run the
+registration command or the sign-in command as appropriate, then check access.
+Set `ENDPOINT` to the actual platform URL, `EMAIL` to the user's email and
+`PROFILE` to a profile for this instance and account.
+
+```sh
+# New account. The CLI prompts for a name and a hidden password.
+aiv auth register --profile "$PROFILE" --endpoint "$ENDPOINT" --email "$EMAIL"
+# Existing account. The CLI prompts for a hidden password.
+aiv auth login --profile "$PROFILE" --endpoint "$ENDPOINT" --email "$EMAIL"
+aiv auth status --profile "$PROFILE"
+aiv space list --profile "$PROFILE"
+```
+
+CLI registration signs the user in and selects the personal Space. For a team
+Space, use `aiv space use "$SPACE_ID" --profile "$PROFILE"` after joining.
+Browser and terminal sessions are separate. Have the user complete prompts
+directly and keep passwords, session cookies, installation tokens, SpaceKeys
+and model keys out of chat and shared logs.
+
 ## Account-based Agent onboarding
 
 This is an alternative to the Web one-use installation authorization, on the
@@ -127,8 +157,7 @@ then unset it. Never add it to ordinary serving-worker configuration or print it
 For Docker/Compose, resolve the actual backend container name from the original
 selector-rich `aiv status` command; default Docker commonly uses `aivision-be`,
 while Compose may choose another name. Set `AIV_BACKEND_CONTAINER` accordingly.
-The native Daily backend provides `/app/manage`; use that launcher for the
-selected native image:
+Use `/app/manage` in a compatible native backend image:
 
 ```sh
 test -n "${SIGNOZ_INGEST_INTERNAL_KEY:-}" &&
@@ -137,8 +166,8 @@ docker exec --workdir /app --env SIGNOZ_INGEST_INTERNAL_KEY "$AIV_BACKEND_CONTAI
 unset SIGNOZ_INGEST_INTERNAL_KEY
 ```
 
-For a separately selected older Python-based image, use its confirmed Python
-management launcher instead. Do not add a host Python prerequisite or assume
+For a source-compatible Python image, use its confirmed Python management
+launcher. Do not add a host Python prerequisite or assume
 that the native image includes `/app/.venv/bin/python`.
 
 Resume clears rebuildable derived records and increments shared generation;

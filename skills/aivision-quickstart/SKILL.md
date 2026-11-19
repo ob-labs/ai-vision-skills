@@ -1,72 +1,47 @@
 ---
 name: aivision-quickstart
-description: Use when a user wants a first hands-on AI Vision experience, an empty installation needs a test Agent, or real model requests are needed to explore Trace, Session and diagnosis before connecting an existing application.
+description: Use when a user wants to try AI Vision on an existing instance, open a built-in example, connect a first Agent or SDK, or verify Traces and Sessions from the bundled demo.
 ---
 
 # AI Vision Quickstart
 
-Help a user experience their own AI Vision installation with a small test Agent.
-Reuse an existing instance. For a first try or personal deployment on a Linux
-Docker host with a matching verified bundle, choose **All-in-One Preview** in the
-[deployment Skill](https://github.com/ob-labs/ai-vision-skills/tree/main/skills/aivision-deploy)
-from the same catalog version. That Skill also covers explicitly selected
-distributed targets and helps verify a compatible installation. Installing this
-Skill alone installs its guidance and demo, which still need a running platform
-and demo dependencies.
+Confirm the user's instance and Space. Help them open a Trace and inspect one
+model or tool call that belongs to it. Continue to a Session or diagnosis when
+the chosen example supports it. If the user needs an instance, use the
+[deployment Skill](https://github.com/ob-labs/ai-vision-skills/tree/main/skills/aivision-deploy).
+For a first sign-in, use `/register` if registration is enabled, or sign in at
+`/login` with an authorized account. Follow the team invitation if needed.
 
-The default outcome is a configured model connection, a test Agent, **four real model
-requests in two two-turn Sessions**, readable Traces and a persisted diagnosis
-with honest per-record results. Use the user's chosen provider. Baidu Token Plan
-is one example, not a bundled account or a required provider.
+## Choose a first experience
 
-## Run the experience
+| User goal | Follow this path |
+|---|---|
+| Explore example traces without a model key | Open **Help → Try an example** when available. Let the user choose a scenario and confirm creation of sample data in the selected Space. Open an example Trace and keep simulated Token usage and cost labeled as demo data. |
+| Connect an Agent or SDK | Open **Agent Access** at `/access` and follow the selected integration's guide. Use its generated configuration and example for the user's framework, or its Agent installation command. Run a recognizable task and open its Trace in the same Space and Agent. For an SDK example, use **Verify this Trace** when available. |
+| Run the bundled demo with a real model | Follow [the live demo workflow](reference/workflow.md) for the isolated test Agent, request budget, and exact Trace and Session IDs. |
 
-Read [the workflow](reference/workflow.md) for the actual routes, credential
-mapping, commands, readback and diagnosis contract, then:
+Use **Help → Getting started** to start the walkthrough, or resume it from the
+same menu. If the deployed instance lacks the example or integration guide, use the
+[first-Agent tutorial](https://aivision.mintlify.site/en/web-quickstart).
 
-1. Establish the reachable platform URL, actual installed version, authorized
-   account/Space and a private source for model endpoint/model ID/API key.
-   Keep known choices and existing services. Ask only for missing inputs;
-   never request a key pasted into chat. Honor a smaller explicit call budget
-   through an adapted onboarding example rather than forcing the four-call runner.
-   No available key means stop before
-   paid calls rather than substituting fixture data and calling it real.
-2. Reuse or create the selected Space's model connection and run one connection
-   test. Open the Langfuse onboarding page and create or reuse a **dedicated
-   test Agent**. Obtain its Agent UUID and same-Space SpaceKey. A saved model
-   connection does not reveal its API key to the local demo; the provider key
-   and the SpaceKey are separate inputs.
-3. Set up the bundled [Python demo](scripts/run_demo.py) in a private directory
-   outside a source checkout, using [its package pins](scripts/requirements.txt).
-   The default command is offline plan-only. An authorized real-request task
-   uses `--execute --config <private.json> --out <new-run-directory>`; it does not
-   need another routine confirmation. The runner makes at most four business
-   calls, with zero provider retries, and records attempts before sending them.
-   Connection tests, optional model validation and LLM diagnosis are **additional
-   calls/costs**. Inspect an interrupted/failed run before any new paid run;
-   never silently change provider/model or create another attempt directory.
-4. Read back the exact generated Trace IDs and both Session IDs in the same
-   Space/Agent and recorded time window. Verify actual inputs, outputs, usage
-   and parent/child relationships, including the real local tool error.
-   `completed_pending_readback` and SDK flush are not platform persistence proof.
-5. Run one supported Quick Diagnosis on those exact Traces. Use live options,
-   the selected model connection and one persisted request ID; retain the same
-   body/ID on an uncertain submission. Check task **and record** outcomes.
-   Failed, skipped and missing-evidence records remain visible; task success
-   does not turn them into successful diagnoses or justify repeated paid runs.
-6. Leave the demo, connection, credentials and results available for the user.
-   Give working Trace, Session, model-connection and diagnosis links, a short
-   click-through itinerary, actual request counts/usage and remaining limits.
-   Do not revoke keys, delete data or change an existing Agent's configuration
-   as routine cleanup. Do not claim zero cost, general model quality, or that
-   a handled example tool failure proves every detector will flag it.
+## Run and verify the live demo
 
-The demo uses the official Langfuse OpenAI wrapper and public SDK observations.
-It runs actual local Decimal tools under deterministic orchestration; it does
-not implement model-selected tool calling, hand-write OTLP or require a Langfuse
-Server. Existing applications should keep their compatible SDK and use their
-onboarding example; these package pins are for the isolated demo only.
+1. Confirm the reachable URL, version, Space, test Agent, and OpenAI-compatible
+   Chat Completions endpoint. Have the user supply credentials locally.
+2. Run the bundled [demo](scripts/run_demo.py) in an isolated environment. The
+   default command prints an offline plan. With authorization for model calls,
+   use `--execute --config <private.json> --out <new-run-directory>`. A complete
+   run sends four requests across two Sessions with zero provider retries.
+   Use a smaller integration example when the user sets a smaller budget.
+   Model connection tests, validation, and model-backed diagnosis use
+   additional requests.
+3. Open the exact Trace and Session links in the report. Verify the Space,
+   Agent and time window, then inspect the calls and handled tool error that
+   actually appear. If requested and supported, run one Quick Diagnosis as
+   described in the workflow and check its task and records.
+4. Report the actual request count, verified links, observed usage, and any
+   missing evidence. Keep secrets and private reports out of shared output.
 
-For later analysis of existing telemetry, use
-[aivision-trace](https://github.com/ob-labs/ai-vision-skills/tree/main/skills/aivision-trace)
-or [aivision-metric](https://github.com/ob-labs/ai-vision-skills/tree/main/skills/aivision-metric).
+Use [aivision-trace](https://github.com/ob-labs/ai-vision-skills/tree/main/skills/aivision-trace)
+or [aivision-metric](https://github.com/ob-labs/ai-vision-skills/tree/main/skills/aivision-metric)
+for follow-on analysis of existing telemetry.

@@ -51,8 +51,8 @@ before either branch, including making the installed command available on `PATH`
 
 This path targets a **Linux** host:
 
-- `aiv` and `kubectl` installed; Docker is needed only to create a local kind
-  cluster, and `gh` only for restricted release downloads
+- `aiv` and `kubectl` installed. Use Docker if you need to create a local kind
+  cluster, and `curl` and `jq` if you need to download Release assets.
 - a cluster with at least **4 CPU / 16Gi** RAM, **~140Gi** disk, **Kubernetes
   1.33–1.36**, admin rights and a default StorageClass
 - Web and OTLP HTTP share the configured public Ingress address; the local
@@ -110,12 +110,10 @@ manifest is required for that local validation.
 
 For published builds, choose Release or Daily using the [shared channel flow](../SKILL.md#choose-release-or-daily)
 and download the [matching CLI and verified manifest](prerequisites.md#resolve-the-version-and-download-matching-assets).
-For restricted Daily, select a published base `delivery-v<product-version>`
-prerelease whose manifest includes `linux/amd64`. Verify the workloads can run
-on Linux x86 nodes in the intended cluster. For a stable Release, use its
-published platform coverage. Preserve the cluster context and namespace.
-Use the base CE vars for the fixed Kubernetes path. Apply Agent-client preview
-vars only if their Release documents Kubernetes support for that base.
+For the chosen stable Release or versioned Daily, verify the service images
+against the platforms of the nodes that will run the workloads. Preserve the
+cluster context and namespace. Use the release's CE vars for the fixed
+Kubernetes path.
 Docker smoke and OCI architecture availability are separate from Kubernetes
 acceptance. If the selected release lacks required assets or platform support,
 resolve a compatible release before deployment.
@@ -125,10 +123,8 @@ and `AIVISION_RELEASE_MANIFEST_BASE64` from its verified CE vars asset into one 
 references pin all five bundled services, including SigNoz. The release metadata
 key supplies the installed product version to About without rewriting original
 component build information.
-For restricted Daily, service digest references come from the manifest under
-`ghcr.io/ob-labs/ai-vision-skills/`; do not infer tags from the Release name.
-Keep `NATIVE_PYTHON_RUNTIME: "true"` from native vars when supported by the
-selected CLI's Kubernetes configuration, and verify support before deployment.
+Use the service digests from the official manifest. Match the runtime mode to
+the actual CLI and images.
 Do not copy Docker-only `OB_BACKEND` or its `OB_IMAGE`: Kubernetes uses its own
 Operator-compatible OceanBase image. Do not copy the Docker history-start or
 password keys, which this target does not accept. Keep the file outside source
@@ -184,17 +180,18 @@ aiv status --target kubernetes --context kind-aivision --namespace aivision
 aiv logs --target kubernetes --context kind-aivision --namespace aivision -n 80 backend
 ```
 
-After registration or login, use **Help → About** or `/about` to compare frontend
-and backend identity with the selected manifest, or the recorded source-build
-metadata for local validation. A Daily displays its full
-derived version; update checks still reference the latest stable Release.
+After [registration or login](operations.md#register-or-sign-in), use
+**Help → About** or `/about` to compare frontend and backend identity with the
+selected manifest or the recorded source-build metadata. A Daily displays its
+full derived version. Update checks reference the latest stable Release.
 
 When the cast prints `Deployment ready.`, open the **Web** address it reports —
 `http://127.0.0.1:5174` on the local host.
 
 Confirm ready Pods, bound PVCs, no persistent startup errors, and HTTP 200 from
 the actual Web address. Bare `aiv status` targets Docker. A Web response does not
-verify Agent collection; follow onboarding with an identifiable new record.
+verify Agent collection. Use the [first-use handoff](../SKILL.md#help-the-user-sign-in-and-get-started)
+and verify an identifiable new record if connecting a real Agent.
 The current Kubernetes path has no Docker-style `destroy`/`redeploy` and no
 external OceanBase support. Repeated casts may interrupt service; failures retain
 resources without automatic rollback. Keep the [consistent restore set](operations.md#backup-and-rollback)

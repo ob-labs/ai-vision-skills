@@ -15,12 +15,12 @@ user's requested window once into absolute RFC3339 or epoch
 product and collection time in a manifest. Reuse the same scope and bounds in
 every time-aware command, including retries and session usage. Include the
 selected Agent UUID and source in the manifest. For an instance-specific task,
-pass `--param agent_uuid="$AGENT_UUID"` on metadata, list, detail, export, session
-and log commands below; this is distinct from `--agent-product`. Carry a requested
-source via `--param source_system=...` and verify response identities. Omit these
-selectors only when the requested population spans those instances or sources.
-Relative values
-such as `7d` or `now` are suitable for exploration, not a reproducible export.
+pass `--param agent_uuid="$AGENT_UUID"` on the metadata, list, detail, export,
+session and log commands below. Query each relevant Agent UUID when exporting
+multiple instances. For endpoints that support a source override, pass
+`--param source_system=...` when a specific source is requested. Verify the
+returned identities and source before including records. Use absolute times
+for reproducible exports and reserve relative times such as `7d` for exploration.
 
 The examples use a fresh subdirectory of `OUT`, preserving any exploratory
 outputs. All flags precede positional IDs or paths. Read metadata before choosing fields

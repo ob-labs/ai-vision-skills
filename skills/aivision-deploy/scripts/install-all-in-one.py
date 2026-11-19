@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install the AI Vision All-in-One preview on a supported local Linux Docker host."""
+"""Install AI Vision All-in-One Personal Edition on a supported local Linux Docker host."""
 
 import argparse
 from contextlib import nullcontext
@@ -18,10 +18,11 @@ from tempfile import NamedTemporaryFile, TemporaryDirectory
 import time
 
 
-REPO = "ob-labs/ai-vision-skills"
+REPO = "antgroup/ai-vision"
 PROFILE = "all-in-one-preview"
 TAG = re.compile(r"all-in-one-preview-v\d+\.\d+\.\d+-daily\.\d{8}(?:\.\d+)?")
-BASE = re.compile(r"delivery-v\d+\.\d+\.\d+-daily\.\d{8}(?:\.\d+)?")
+# Existing offline bundles may still carry the former delivery- tag prefix.
+BASE = re.compile(r"(?:delivery-)?v(\d+\.\d+\.\d+-daily\.\d{8}(?:\.\d+)?)")
 ARCHITECTURES = {"x86_64": "amd64", "amd64": "amd64", "aarch64": "arm64", "arm64": "arm64"}
 ASSETS = {
     "linux/amd64": ("all-in-one-manifest.json", "aiv-all-in-one-linux-amd64.tar.gz", "aiv-linux-x64.tar.gz"),
@@ -63,7 +64,7 @@ def resolve_release(tag, target):
         and required_assets <= {asset["name"] for asset in release["assets"] if asset["state"] == "uploaded"}
     ]
     if not releases:
-        raise ValueError(f"No published All-in-One preview for {target} matches the request.")
+        raise ValueError(f"No published All-in-One release for {target} matches the request in {REPO}.")
     return max(releases, key=lambda release: (release["published_at"], release["id"]))["tag_name"]
 
 
@@ -121,20 +122,21 @@ def require_size(value):
 def read_manifest(folder, selected, target):
     manifest_name, archive, client_archive = ASSETS[target]
     manifest = json.loads((folder / manifest_name).read_text(encoding="utf-8"))
+    base = BASE.fullmatch(manifest["base_release"])
     if (
         manifest.get("schema_version") != 1
         or manifest.get("profile") != PROFILE
         or manifest.get("platform") != target
         or not TAG.fullmatch(manifest["release_tag"])
         or (selected is not None and manifest["release_tag"] != selected)
-        or not BASE.fullmatch(manifest["base_release"])
+        or base is None
         or manifest.get("archive") != archive
         or not SHA256.fullmatch(manifest["archive_sha256"])
         or not require_size(manifest.get("archive_bytes"))
         or not re.fullmatch(r"sha256:[a-f0-9]{64}", manifest["image_id"])
         or not re.fullmatch(r"aiv-all-in-one:[a-z0-9][a-z0-9._-]*", manifest["image_tag"])
     ):
-        raise ValueError("The manifest does not describe the selected All-in-One preview.")
+        raise ValueError("The manifest does not describe the selected All-in-One release.")
 
     zstd_fields = {"zstd_archive", "zstd_archive_bytes", "zstd_archive_sha256"}
     if zstd_fields.intersection(manifest) and (
@@ -149,12 +151,12 @@ def read_manifest(folder, selected, target):
         if (
             not isinstance(client, dict)
             or client.get("archive") != client_archive
-            or f"delivery-v{client.get('version')}" != manifest["base_release"]
+            or client.get("version") != base.group(1)
             or not SHA256.fullmatch(client.get("archive_sha256", ""))
             or not SHA256.fullmatch(client.get("binary_sha256", ""))
             or not require_size(client.get("archive_bytes"))
         ):
-            raise ValueError("The preview manifest is missing a matching Agent CLI.")
+            raise ValueError("The All-in-One manifest is missing a matching Agent CLI.")
     return manifest
 
 
@@ -170,7 +172,7 @@ def image_archive(folder, manifest, assets, requested, zstd_supported):
     if requested == "zstd" and not zstd_supported:
         raise ValueError("This Docker server version is outside the zstd support threshold. Use gzip.")
     if requested == "zstd" and not zstd_available:
-        raise ValueError("This preview has no zstd archive available for the selected architecture.")
+        raise ValueError("This release has no zstd archive available for the selected architecture.")
     prefix = "zstd_" if requested != "gzip" and zstd_supported and zstd_available else ""
     name, digest, size = (manifest[prefix + field] for field in ("archive", "archive_sha256", "archive_bytes"))
     if assets is not None:
@@ -230,7 +232,7 @@ def select_cli(folder, manifest, target, assets, online):
         release_tag = preview_tag
     else:
         if not online:
-            raise ValueError("This legacy x86-64 preview uses a separate CLI release. Use --tag for CLI access.")
+            raise ValueError("This legacy x86-64 bundle uses a separate CLI release. Use --tag for CLI access.")
         release_tag = manifest["base_release"]
         cli_assets = published_assets(release_tag)
         archive = ASSETS[target][2]
@@ -240,7 +242,7 @@ def select_cli(folder, manifest, target, assets, online):
         if sum_for(folder, archive) != digest:
             raise ValueError("The base CLI archive checksum differs from authenticated GitHub metadata.")
         client = {"archive": archive, "archive_sha256": digest, "archive_bytes": size,
-                  "version": release_tag[len("delivery-v"):]}
+                  "version": BASE.fullmatch(release_tag).group(1)}
     return {**client, "platform": target, "preview_tag": preview_tag, "release_tag": release_tag,
             "repository": REPO}
 
@@ -291,7 +293,7 @@ def verify_resource(kind, resource, labels):
     if actual.get(OWNER) != labels[OWNER]:
         raise ValueError(f"Docker {kind} {resource} is already owned by another deployment.")
     if kind == "volume" and actual.get(RELEASE) != labels[RELEASE]:
-        raise ValueError(f"Docker volume {resource} belongs to a different preview. "
+        raise ValueError(f"Docker volume {resource} belongs to a different All-in-One release. "
                          "Use its original release tag or select a new instance name.")
     return True
 
@@ -384,10 +386,10 @@ def install(args, manifest, archive, labels):
             print(f"AI Vision is ready at {web}. OTLP HTTP: {otlp}.")
             if "agent_cli" in manifest:
                 client = manifest["agent_cli"]
-                print(f"Preview: {manifest['release_tag']} ({target}). Base release: {manifest['base_release']}.")
-                print(f"Matching Agent CLI: {client['archive']} (aiv {client['version']}) from this preview.")
+                print(f"All-in-One release: {manifest['release_tag']} ({target}). Base release: {manifest['base_release']}.")
+                print(f"Matching Agent CLI: {client['archive']} (aiv {client['version']}) from this release.")
             else:
-                print(f"Preview: {manifest['release_tag']}. Matching CLI release: {manifest['base_release']}.")
+                print(f"All-in-One release: {manifest['release_tag']}. Matching CLI release: {manifest['base_release']}.")
             print(f"Image: {image}. Persistent Docker volume: {volume}.")
             return
         time.sleep(3)
@@ -423,7 +425,7 @@ def sample_instance(name):
     volume_labels = json.loads(output("docker", "volume", "inspect", "--format", "{{json .Labels}}", volume))
     tag = volume_labels.get(RELEASE, "")
     if volume_labels.get(OWNER) != name or not TAG.fullmatch(tag):
-        raise ValueError(f"Docker volume {volume} does not identify the installed preview.")
+        raise ValueError(f"Docker volume {volume} does not identify the installed release.")
     ports = []
     for container_port in ("5174/tcp", "4318/tcp"):
         bindings = [int(entry["HostPort"]) for entry in (published.get(container_port) or [])
@@ -437,12 +439,12 @@ def sample_instance(name):
 def sample_trace(args, target):
     tag, (web_port, otlp_port) = sample_instance(args.name)
     if args.tag and args.tag != tag:
-        raise ValueError(f"{args.name} uses {tag}. Select that exact preview for its sample Trace.")
+        raise ValueError(f"{args.name} uses {tag}. Select that exact release for its sample Trace.")
     with (nullcontext(args.from_dir) if args.from_dir else TemporaryDirectory(prefix="aiv-sample-trace-")) as directory:
         folder = Path(directory).resolve()
         if args.from_dir:
             if preview_manifest(folder, None, target)[0]["release_tag"] != tag:
-                raise ValueError(f"The local bundle does not match {args.name}'s preview {tag}.")
+                raise ValueError(f"The local bundle does not match {args.name}'s release {tag}.")
             verify_file(folder / SAMPLE, sum_for(folder, SAMPLE))
         else:
             assets = published_assets(tag)
@@ -456,10 +458,10 @@ def sample_trace(args, target):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     source = parser.add_mutually_exclusive_group()
-    source.add_argument("--tag", help="Pin an exact published All-in-One preview tag.")
+    source.add_argument("--tag", help="Pin an exact published All-in-One release tag.")
     source.add_argument("--from-dir", type=Path, help="Install from a trusted local release asset directory.")
     operation = parser.add_mutually_exclusive_group()
-    operation.add_argument("--resolve", action="store_true", help="Print the compatible published preview tag.")
+    operation.add_argument("--resolve", action="store_true", help="Print the compatible published release tag.")
     operation.add_argument("--resolve-cli", action="store_true", help="Print the matching Agent CLI selection as JSON.")
     operation.add_argument("--install-cli", action="store_true", help="Install the matching Agent CLI without Docker.")
     operation.add_argument("--sample-trace", action="store_true", help="Send a synthetic Trace to a running local instance.")
@@ -477,9 +479,9 @@ def main():
     try:
         target = linux_platform(platform.system(), platform.machine())
         if args.tag is not None and not TAG.fullmatch(args.tag):
-            raise ValueError("Specify an exact All-in-One preview tag.")
+            raise ValueError("Specify an exact All-in-One release tag.")
         if args.resolve and args.from_dir:
-            raise ValueError("--resolve selects a published preview. Use --resolve-cli for a local CLI selection.")
+            raise ValueError("--resolve selects a published release. Use --resolve-cli for a local CLI selection.")
         if not re.fullmatch(r"[a-z0-9][a-z0-9-]{1,47}", args.name):
             raise ValueError("Use a name of 2–48 lowercase letters, digits or hyphens, starting with a letter or digit.")
         ports = {args.web_port, args.otlp_port}

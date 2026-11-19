@@ -1,6 +1,6 @@
 ---
 name: aivision-metric
-description: Use when a coding agent needs AI Vision trace/span counts, latency, token or cost usage, or telemetry metadata and query capabilities through the aiv CLI.
+description: Use the aiv CLI to measure AI Vision request volume, errors, latency, token use, and cost over a time window and check coverage before comparing results.
 ---
 
 # AI Vision Metric
@@ -11,19 +11,18 @@ read. Keep the endpoint, space, agent product and time window fixed per result.
 
 ## Prerequisites
 
-Expose an existing default installation before downloading anything:
+Check the active CLI and the commands you need:
 
 ```bash
-export PATH="$HOME/.local/bin:$PATH"
 command -v aiv
 aiv --version
 aiv query metadata --help
 aiv query trace metrics --help
 ```
 
-If the binary is missing, cannot run, or lacks the required command/flags, follow
-[reference/install-cli.md](reference/install-cli.md). Check the selected path and
-help again after installing a compatible release; a printed version is insufficient.
+If `aiv` is missing or lacks a required command, use
+[reference/install-cli.md](reference/install-cli.md) to locate or install a
+compatible CLI. Use `Get-Command aiv` to check the path in PowerShell.
 
 Reuse the confirmed `PROFILE`, endpoint and space. Set `AGENT_PRODUCT` and,
 for an instance request, `AGENT_UUID` from the existing platform Agent details
@@ -44,8 +43,9 @@ scope before widening a window or inferring that collection is broken.
 Freeze the requested scope and time window into absolute UTC `SINCE` / `UNTIL`
 bounds. Reuse those values for every comparison. The commands below select one
 confirmed instance and create a private directory outside the repository. For
-an explicitly product-wide request, omit the UUID check and selector together.
-`-o` overwrites files; use unique output names for each query and retry:
+a product with multiple instances, query each relevant Agent UUID and record
+the coverage. A product name alone can select a default route. Use unique output
+names for each query and retry because `-o` overwrites files.
 
 ```bash
 : "${PROFILE:?Select a profile}" "${AGENT_PRODUCT:?Confirm the Agent product}" \
@@ -60,11 +60,9 @@ aiv query trace metrics --profile "$PROFILE" --agent-product "$AGENT_PRODUCT" \
   --bucket hour --group-by model -o "$OUT/metrics.json"
 ```
 
-This queries the entire window through the native trace metrics API. It does
-not require raw SQL support. `--bucket` accepts `minute`, `hour` or `day`;
-optional `--group-by` accepts one of `model` or `provider`. Omit grouping when
-unneeded. Keep `--agent-uuid` for an instance-specific request; omit it only for
-an explicitly requested product-wide result.
+This queries the entire window through the native trace metrics API, which is
+independent of raw SQL support. `--bucket` accepts `minute`, `hour` or `day`.
+`--group-by` accepts `model` or `provider` and defaults to `model`.
 For comparisons using metadata, list/get/export or session commands, use
 `--param agent_uuid="$AGENT_UUID"`; their flags differ from metrics. Verify the
 returned scope and preserve it through every page and detail request.
@@ -75,11 +73,10 @@ The result is JSON: counts, error rate, canonical token/cost `usage`, `coverage`
 `latencyMs.mean` / `p95`, `timeseries`, `groups`, and `meta` with the exact bounds
 and filters. Read it before reporting a measurement:
 
-- `meta.complete` must be `true`. The CLI fails for missing/false completeness,
-  HTTP errors, unsupported capabilities or a scan over **10,000 traces**. A
-  10,001-trace window fails; it is not truncated into a successful total.
-- There are no page/limit flags. Narrow an oversized window and report the new
-  bounds. Do not add split-window p95 values or treat a list page as this metric.
+- The CLI requires `meta.complete` to be `true` before it writes aggregate output.
+- If the backend returns the **10,000-trace scan limit**, narrow the window and
+  report the effective bounds. The command has no pagination. Report p95 for
+  each measured scope or compute it from the full set of trace latencies.
 - Retrieval completeness differs from usage coverage. If a billable call lacks
   usage, `usage.total` can be null. Report `coverage.knownTokens` as a known
   subtotal alongside `knownUsageCalls` / `billableCalls`, never as a full total.

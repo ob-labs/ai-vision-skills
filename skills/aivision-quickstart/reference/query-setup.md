@@ -76,8 +76,9 @@ endpoint does not transfer its credentials.
 Confirm `AGENT_PRODUCT` and, for an instance request, `AGENT_UUID` from the
 existing platform Agent details or the user's known instance. Product and UUID
 are different selectors. Pass the explicit product on every command below and
-in the referenced recipes, even when a saved default exists. Do not use a local
-`agent status` check to infer a remote instance's UUID.
+in the referenced recipes. A product name alone can select a default route.
+When the task spans instances, query each relevant UUID explicitly. Use Agent
+details on the target platform to resolve a remote instance's UUID.
 
 Metadata verifies query access and schema, then a list/metrics request verifies
 the chosen scope and bounds. On 401/403, check the key and its space; on 404,

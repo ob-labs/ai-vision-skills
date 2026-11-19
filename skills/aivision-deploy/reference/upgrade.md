@@ -8,7 +8,7 @@ The restricted native CLI profile supports default Docker and
 CLI-managed Compose. It rejects existing-file / standalone `--compose-file`
 deployments. If the existing installation uses that mode, stop before replacing
 the CLI, changing configuration or mutating services. Keep its compatible CLI
-and resolve a supported upgrade path; this delivery provides no automatic
+and resolve a supported upgrade path. The native-only CLI provides no automatic
 conversion. The standalone instructions below apply only to ordinary source
 CLI builds with that capability.
 
@@ -49,20 +49,17 @@ An inspection-only request does not authorize upgrade or container removal.
    If the backup procedure or destination is unknown, resolve that specific gap
    before mutation. Keep backup credentials and private state out of chat/logs.
 3. [Resolve and verify](prerequisites.md#resolve-the-version-and-download-matching-assets)
-   the selected base Release, CLI, manifest and datastore vars. For unpinned
-   restricted Daily on a Linux x86 server, discover the newest published base
-   compatible with the required Agent clients. If an existing deployment falls
-   outside that platform scope, preserve it and stop the private upgrade path.
-   Reuse the resolved version for retries.
+   the selected official versioned Release, CLI, manifest and datastore vars.
+   Verify the target runtime and deployment and Agent client platforms before
+   changing an existing native-only installation to a source-compatible
+   release. Reuse the resolved version for retries.
    Preserve the old restore set before installing the target CLI or changing
    deployment configuration. Keep historical release files you need to recover.
 4. Merge the five released service digests and embedded release manifest into
    the original configuration. Reconcile legacy/canonical image aliases,
    `AIV_VAR_*` and existing `--var` image overrides. Confirm the effective
-   image pins and manifest before `cast`. If the request includes preview
-   clients, use the [verified same-base backend configuration](prerequisites.md#select-the-agent-client-backend-configuration).
-   For restricted Daily, keep the immutable `ghcr.io/ob-labs/ai-vision-skills/`
-   image references and enabled native runtime. Preserve passwords, tokens,
+   image pins and manifest before `cast`. Use the runtime mode required by
+   the target CLI and images. Preserve passwords, tokens,
    datastore/backend, managed/external choice, ports, addresses, namespace,
    state, and fixed history start. Edit the original private vars file and pass
    one `--vars-file`. External databases keep their existing connection/image

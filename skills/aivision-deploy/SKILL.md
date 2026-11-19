@@ -1,31 +1,31 @@
 ---
 name: aivision-deploy
-description: Install AI Vision All-in-One for a quick trial or personal use, or deploy, verify and upgrade the distributed platform with Docker, Compose or Kubernetes. Preserve the selected datastore, deployment identity and telemetry.
+description: Use to deploy AI Vision All-in-One Personal Edition on Linux, deploy or upgrade a shared Docker, Compose, or Kubernetes instance, or guide the first user through sign-up and their first Trace.
 ---
 
 # AI Vision Deployment
 
 Use the selected target and its maintained lifecycle entry point. Deployment
-assets and capability boundaries remain product-owned and are embedded in the
-matching released CLI. This Skill bundles recipient instructions; normal
-deployment requires neither a product checkout nor private source-document access.
+assets and the CLI are distributed through
+[AI Vision Releases](https://github.com/antgroup/ai-vision/releases).
 
 ## Choose a deployment mode
 
 | Situation | Start here |
 |---|---|
-| First try or personal use on a Linux x86-64 or ARM64 Docker host | Recommend [All-in-One Preview](reference/all-in-one.md) when a verified bundle matches the host. One container includes the platform and embedded seekdb, with data in one named Docker volume. Offer the sample Trace after sign-up if the selected release includes it, then guide Agent onboarding when requested. |
+| Personal use on a Linux x86-64 or ARM64 Docker host | Use [All-in-One Personal Edition](reference/all-in-one.md) when a verified bundle matches the host. One container runs the platform with embedded seekdb, and one named Docker volume holds its data. After startup, follow [the first-use handoff](#help-the-user-sign-in-and-get-started). |
 | New shared deployment, an external database, or an explicit distributed Docker, Compose or Kubernetes target | Follow the distributed deployment below, including its supported platforms and datastore choices. |
-| Existing instance | Keep its mode, datastore and identity. Use the [All-in-One operations guide](reference/all-in-one.md#stop-restart-or-recreate) for an existing preview or the [distributed upgrade workflow](reference/upgrade.md) for an existing distributed installation. |
+| Existing instance | Keep its mode, datastore and identity. Use the [All-in-One operations guide](reference/all-in-one.md#stop-restart-or-recreate) for an existing personal installation, or the [distributed upgrade workflow](reference/upgrade.md) for an existing distributed installation. |
 
-Check the Docker host separately from the browser or Agent machine. If no
-verified preview bundle matches the Linux host, check the distributed target's
-platform support or use an eligible Linux VM for the trial. Honor an explicit
-deployment or version choice. The steps below apply to distributed deployments.
+Check the Docker host separately from the browser or Agent machine. If a
+matching All-in-One release is unavailable, check for a verified local bundle
+or compatible distributed deployment assets. Use a Linux VM when the machine
+running the browser or Agent cannot host the personal edition. The steps below
+cover distributed deployments.
 
 ## Upgrade an existing installation
 
-For an upgrade request, use the [existing-installation workflow](reference/upgrade.md)
+For a distributed upgrade, use the [existing-installation workflow](reference/upgrade.md)
 before the new-install steps below. Let the matching `aiv` CLI perform the
 lifecycle. Preserve the original target, namespace, state, datastore, credentials
 and history bound; resolve one published product version for all five images.
@@ -43,33 +43,25 @@ checkout and matching images instead of selecting a published channel. Follow
 local evidence does not establish a published Release or Daily.
 
 For a new deployment with no version preference, offer **Release** (the default,
-latest published stable version) or **Daily** (latest successfully published
-preview build). Honor an explicit version or channel without asking again.
+latest published stable version) or **Daily** (latest published Daily build).
+Honor an explicit version or channel without asking again.
 If the user delegates the choice, use Release. For an existing deployment,
 inspect its saved configuration and actual version first; retries keep that
 combination, and upgrades use the channel or version the user requested.
 
-Resolve a **published versioned GitHub Release** before installing. For Release,
-start with the product repository's latest stable Release. For Daily, discover
-the newest compatible published `delivery-v<product-version>` base prerelease in
-`ob-labs/ai-vision-skills`. The restricted Daily deployment host must be Linux
-x86 (`linux/amd64`). Verify that the base manifest includes that server platform
-and the selected datastore. The CLI host and Agent clients can differ from the
-server. Keep an explicit requested version and
-reuse the recorded selection for retries. A missing compatible publication stops
-that path. Follow [version resolution and matching assets](reference/prerequisites.md#resolve-the-version-and-download-matching-assets).
+Resolve a **published versioned Release** in `antgroup/ai-vision` before
+installing. For Release, use the latest compatible stable `vX.Y.Z` Release.
+For Daily, use a compatible versioned `vX.Y.Z-daily.YYYYMMDD[.N]` prerelease.
+A rolling pointer can help discovery; install using the exact versioned tag.
+Verify the matching CLI, datastore vars file and manifest. The deployment host
+and Agent clients can use different platforms. Follow
+[version resolution and asset verification](reference/prerequisites.md#resolve-the-version-and-download-matching-assets).
 
-For Apple Silicon Agent onboarding, use the macOS assets in the selected Daily
-when present. A published historical companion is compatible only with its
-exact base. For Windows x64, use the verified preview override only when
-requested. Preserve the base release's other images and datastore settings.
-See [Agent-client backend selection](reference/prerequisites.md#select-the-agent-client-backend-configuration)
-for matching configuration and acceptance limits.
-Pin the chosen tags for the operation and install the matching CLI on each host.
-
-The restricted native CLI profile excludes source-mode Python resources before
-linking. It supports CLI-managed `--target compose` with matching native vars.
-Standalone `--compose-file` remains available in ordinary source CLI builds.
+If a channel has no compatible publication, name the missing tag, asset, or
+platform. For an unpinned trial, check the official distributed Release if
+All-in-One is absent. Offer an existing platform or the explicitly requested
+[source deployment path](reference/prerequisites.md#source-build-identity-and-verification)
+when available. Keep a requested version fixed across retries.
 
 ## Decide the environment first
 
@@ -79,23 +71,18 @@ entry points differ and Kubernetes needs a cluster that already exists:
 
 | Target | What it requires | Command shape | Depth |
 |---|---|---|---|
-| **Docker** (default, the usual answer) | a running Docker daemon | `aiv cast --var …` | [reference/docker.md](reference/docker.md) |
-| **Docker Compose** (optional, current source) | Matching aiv, Docker, Compose 2.27+, matching deployment assets/images; no host Python/controller | `aiv cast --target compose …` | [product Compose](reference/docker.md#product-compose-source-version) |
+| **Docker** (default) | A running Docker daemon | `aiv cast --var …` | [reference/docker.md](reference/docker.md) |
+| **Docker Compose** | A compatible `aiv`, Docker Compose 2.27+, and matching product assets | `aiv cast --target compose …` | [product Compose](reference/docker.md#product-compose-source-version) |
 | **Kubernetes** | `kubectl` plus an existing cluster: Kubernetes 1.33–1.36, admin rights, a default StorageClass, ≥4 CPU / 16Gi and ~140Gi disk | `aiv cast --target kubernetes --context <ctx> --vars-file ./aivision.k8s.vars.yaml` | [reference/kubernetes.md](reference/kubernetes.md) |
 
-For Compose, retain --target compose on every CLI operation. The Go CLI calls
-native Compose with lifecycle guards; no host Python or extra control script is
-required. Continue in [product Compose](reference/docker.md#product-compose-source-version).
-For Kubernetes, continue in [reference/kubernetes.md](reference/kubernetes.md),
-including its target-specific verification and limits; the remaining commands
-on this page apply to Docker. Kubernetes currently supports bundled OceanBase
-CE through OB Operator only; it does not support seekdb or configure the native
-v1 history start.
-
-Helm deployment is a committed follow-up and is currently unavailable. This
-delivery provides no product Chart or supported Helm commands; use the fixed
-Kubernetes CLI path. Future Helm work does not provide a runnable installation
-or automatic adoption of existing resources.
+For Compose, retain `--target compose` on every CLI operation. The Go CLI calls
+native Compose with lifecycle guards. Follow the
+[Compose recipe](reference/docker.md#product-compose-source-version) or the
+[Kubernetes recipe](reference/kubernetes.md) for your target, then return to the
+[first-use handoff](#help-the-user-sign-in-and-get-started). The remaining
+deployment commands on this page apply to Docker. Kubernetes supports bundled
+OceanBase CE through OB Operator. Check its limits on datastore selection and
+Langfuse v1 reads in the Kubernetes recipe.
 
 Use `frontend`, `backend`, `diagnosis`, `ingest-gateway`, `data-backend` and
 `database` as product component names. The bundled [component compatibility](reference/operations.md#component-names-and-configuration)
@@ -216,12 +203,10 @@ vars file**, preserving the datastore, password, fixed history start, addresses
 and ports. Use the CE or seekdb asset for that selected backend; see
 [matching assets](reference/prerequisites.md#resolve-the-version-and-download-matching-assets).
 Use the selected base's five exact service digests, including SigNoz, and its
-`AIVISION_RELEASE_MANIFEST_BASE64`. If Agent onboarding requires a preview,
-apply its verified backend configuration using the [same-base compatibility checks](reference/prerequisites.md#select-the-agent-client-backend-configuration).
-Keep `NATIVE_PYTHON_RUNTIME` enabled for native delivery. The services and native
-Agent installation require no user-installed Python. For
-explicitly requested local images, keep their
-recorded references and use `IMAGE_PULL=missing` instead of `always` below when
+`AIVISION_RELEASE_MANIFEST_BASE64`. Match the runtime configuration to the CLI
+and images. The standard release uses source-compatible images and CLI. For
+explicitly requested local images, keep their recorded references and use
+`IMAGE_PULL=missing` instead of `always` below when
 those images exist only on this host.
 
 ```bash
@@ -273,14 +258,14 @@ with older clients; check the installed CLI help for other aliases.
 
 Success means all enabled components (six with either bundled datastore, five with
 `OB_MANAGED=false`) report `running` with `ok` health, the web port answers,
-and the user can open the deployed Web URL to register and
-install a collection plugin. A component that is `running` but not `ok`, or a
+and the user can open the deployed Web URL. Verify signed-in access and
+telemetry with the steps below. A component that is `running` but not `ok`, or a
 container that restarted, is not a finished deployment — read `aiv logs
 <component>` and report the real state.
 
-After registration or login, open **Help → About** or `/about` at the deployed
-Web URL. For a published build, compare the current version with
-`release-manifest.json` and expand
+Use the [account setup](reference/operations.md#register-or-sign-in) at the deployed
+Web URL. Once signed in, open **Help → About** or `/about`. For a published
+build, compare the current version with `release-manifest.json` and expand
 Diagnostics to compare the actual frontend and backend builds with their own
 expected manifest entries. Reused components may have different older SHAs and
 build-time versions; that is valid when the release record expects them. Missing
@@ -298,8 +283,9 @@ public Web URL from the browser/Agent host and use that reachable endpoint for
 onboarding. A local HTTP 200 does not establish remote reachability.
 
 For native Langfuse v1 readiness, also confirm that `aiv status` shows the saved
-history start matching the vars file. After registering an Agent and obtaining
-its SpaceKey through onboarding, use Basic authentication (`AgentUUID:SpaceKey`)
+history start matching the vars file. After connecting a Langfuse SDK Agent and
+obtaining its SpaceKey through onboarding, use Basic authentication
+(`AgentUUID:SpaceKey`)
 to call `GET /api/public/traces?limit=1` at the deployed web endpoint: expect
 HTTP 200, including for an empty agent. Then send a non-sensitive SDK trace and
 verify `GET /api/public/traces/<trace-id>` returns that trace, allowing bounded
@@ -309,54 +295,37 @@ failed attempt. Keep credentials in private configuration and do not print
 them. Without credentials, report the API check
 as pending; container health and Web HTTP 200 alone do not verify v1 reads.
 
-## After deployment: help the user use their data
+## Help the user sign in and get started
 
-After reporting the actual verification result, briefly introduce the query
-skills in the user's language. They turn collected telemetry into something the
-user can inspect from their coding agent:
+Open the verified Web URL from the user's browser and guide them through
+[registration or sign-in](reference/operations.md#register-or-sign-in). Confirm
+the intended Space opens. The user enters their password in the browser or the
+CLI's hidden prompt.
 
-| Skill | What to invite the user to do | Example request |
-|---|---|---|
-| `aivision-trace` | Find slow or failed traces, inspect spans and session context, and export selected traces. | “用 aivision-trace 找出这个 Agent 最近一小时最慢的请求，展开 span 和会话上下文，并导出选中的 Trace。” |
-| `aivision-metric` | Summarize request volume, error rate, latency and token usage, plus cost where the data supports it. | “用 aivision-metric 看这个 Agent 最近一天的请求量、错误率、P95 延迟和 Token 用量；有成本数据时一起统计。” |
+Choose the first action based on what the user wants to try:
 
-Tailor the next step to what was verified:
+| Goal | First action and verification |
+|---|---|
+| Explore the platform without a model key | Open **Help → Getting started**. When **Try an example** is available, let the user choose and confirm a scenario, then inspect one demo Trace. |
+| See their own Agent's telemetry | Open **Agent Access** at `/access`, choose the Agent or SDK and use its setup guide. For a coding Agent, follow [Agent machine onboarding](reference/docker.md#agent-machine-onboarding). In the same Space, find the first Trace from a recognizable new task and inspect a call. |
 
-- **No telemetry yet:** follow [Agent machine onboarding](reference/docker.md#agent-machine-onboarding)
-  using the deployed Web URL or optional CLI account flow, then have them run a
-  real task and confirm its trace arrives. The query skills become useful after
-  that; do not describe an empty
-  deployment or the deployment test trace as their application workload.
-- **Telemetry exists, but query access is missing:** explain that queries need
-  a profile for this deployment and an authorized **query SpaceKey** for the
-  selected space. When the user continues with querying, check `aiv auth status`
-  for that profile and follow the CLI login and `aiv key create` / `aiv key
-  import` flow as needed. Account login, Langfuse Basic credentials and ingest
-  tokens do not by themselves establish OpenAPI query access.
-- **Telemetry and query access are ready:** name the query skill and offer a
-  concrete next request like the examples above. When the user requests it,
-  use the matching profile and retain the deployed endpoint, selected space,
-  agent product and, when relevant, Agent UUID; the query skill freezes the time
-  range and verifies the returned scope. Do not reuse an unrelated active
-  profile or expose credentials in the handoff.
+For a live standalone evaluation, continue with
+[aivision-quickstart](https://github.com/ob-labs/ai-vision-skills/tree/main/skills/aivision-quickstart)
+using the verified URL and selected Space.
 
-This is an invitation, not an instruction to run extra analysis or export data
-as part of deployment. Do not promise automatic root-cause diagnosis, and report
-missing token/cost data as missing rather than zero.
+If the installed build lacks the example, use its Agent integration guide or
+share the [first-Agent tutorial](https://aivision.mintlify.site/en/web-quickstart).
+For builds that include the All-in-One sample helper, the
+[synthetic sample Trace](reference/all-in-one.md#view-a-sample-trace) is another
+way to explore the UI. Report deployment health, account access and the actual
+first-use result, marking any step the user still needs to complete.
 
-A user may have installed only this deployment skill. Check skill availability
-before invoking a query skill; if absent, point to the
-[skill catalog and installation instructions](https://github.com/ob-labs/ai-vision-skills/tree/main/skills)
-and show the relevant install command:
-
-```bash
-npx skills add ob-labs/ai-vision-skills --skill aivision-trace
-npx skills add ob-labs/ai-vision-skills --skill aivision-metric
-```
-
-Install only the requested skill in the user's chosen agent/location; the
-catalog also documents manual copying. Keep this discovery step optional and
-separate from deployment readiness.
+After real telemetry is present, introduce
+[aivision-trace](https://github.com/ob-labs/ai-vision-skills/tree/main/skills/aivision-trace)
+for Trace and Session inspection and
+[aivision-metric](https://github.com/ob-labs/ai-vision-skills/tree/main/skills/aivision-metric)
+for usage, rate, latency and supported cost metrics. Querying uses an authorized
+query SpaceKey for the selected Space.
 
 ## Native query defaults and recovery
 
@@ -411,15 +380,14 @@ on other machines, override `BIND_ADDR` and `PUBLIC_HOST` as described in
   not an established equivalent.
 - Do not claim the deployment works without target-specific status, a reachable
   web port and the authenticated telemetry checks in the verification recipe.
-- Keep the authentication gate detection-based rather than baking "private" or
-  "public" into commands, so the skill survives the visibility change.
+- Check access to the exact Release or image before asking the user to authenticate.
 
 ## Troubleshooting
 
 | Symptom | Cause and fix |
 |---|---|
-| Release download returns 403/404, or `gh auth status` fails | Check the tag, asset name, network and authorized Release access. Restricted trial downloads use the operator's own `gh` account; if needed use `gh auth login --hostname github.com --web`. Repository access, CLI delivery and image access remain separate. |
-| `docker pull ghcr.io/ob-labs/…` denied / `unauthorized` | Check image access. If authentication is needed, use `docker login ghcr.io -u <user>` with an authorized PAT with `read:packages` (<https://github.com/settings/tokens/new>). Handle network and disk errors separately. |
+| Release download returns 403/404 | Check the versioned tag and asset under `antgroup/ai-vision`, then network and any required GitHub authentication. Report missing official assets before attempting installation. |
+| `docker pull ghcr.io/antgroup/ai-vision/…` denied / `unauthorized` | Check image access. If authentication is needed, use `docker login ghcr.io -u <user>` with an authorized PAT with `read:packages` (<https://github.com/settings/tokens/new>). Handle network and disk errors separately. |
 | `Can't connect to MySQL server on 127.0.0.1:2881` when reusing OB | `127.0.0.1` is the container itself; point `OB_HOST` at the host IP or the Docker bridge gateway. |
 | `bind: address already in use`, or a clash with another stack | Change the whole port set together with `--var` (see the isolated-stack variant). |
 | `--context requires --target kubernetes`, or a docker-only flag is rejected | Kubernetes accepts only the flags listed in its variant. |
@@ -430,20 +398,18 @@ on other machines, override `BIND_ADDR` and `PUBLIC_HOST` as described in
 
 Skill detail:
 
-- [reference/all-in-one.md](reference/all-in-one.md) — quick trial and personal
-  deployment, private or offline install, Agent onboarding and volume retention
+- [All-in-One Personal Edition](reference/all-in-one.md) for online or offline
+  install, Agent onboarding, and volume retention
 - [reference/docker.md](reference/docker.md) — Docker target: the one command, the
   component/port table, selecting seekdb, reusing an existing database, a second isolated stack,
   serving users beyond the local host
 - [reference/kubernetes.md](reference/kubernetes.md) — Kubernetes target: cluster
   requirements, bootstrapping a kind cluster, and the flags it rejects
 - [reference/prerequisites.md](reference/prerequisites.md) — shared: what is
-  really required, installing the CLI, the registry login, the private-repository
-  gate
+  really required, installing the CLI, verifying releases and checking image access
 
 Manual user steps: [Docker deployment](https://aivision.mintlify.site/en/deployment/docker)
 and [Kubernetes deployment](https://aivision.mintlify.site/en/deployment/kubernetes).
 
 Bundled operator details: [component compatibility, history limits, backup and recovery](reference/operations.md).
-The matching released CLI embeds product deployment assets. This repository does
-not build images, publish a Chart or grant access to product Releases or packages.
+The matching product CLI embeds the distributed deployment assets.
