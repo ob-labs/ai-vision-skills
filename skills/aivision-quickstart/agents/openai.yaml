@@ -1,4 +1,4 @@
 interface:
   display_name: "AI Vision Quickstart"
-  short_description: "Try AI Vision examples or verify a live test Agent"
+  short_description: "Try AI Vision and inspect your first traces"
   default_prompt: "Use $aivision-quickstart to help me try AI Vision on my existing instance and inspect my first Trace."

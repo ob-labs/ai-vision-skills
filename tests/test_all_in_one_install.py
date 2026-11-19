@@ -70,12 +70,12 @@ class ReleaseDiscoveryTests(unittest.TestCase):
 
     def test_exact_tag_selects_older_release_and_never_falls_back(self):
         self.assertEqual(installer.resolve_release(EARLY, AMD64), EARLY)
-        with self.assertRaisesRegex(ValueError, "No published All-in-One preview for linux/amd64"):
+        with self.assertRaisesRegex(ValueError, "No published All-in-One release for linux/amd64"):
             installer.resolve_release("all-in-one-preview-v0.1.0-daily.20261115", AMD64)
 
     def test_arm64_ignores_x86_release_and_incomplete_arm_release(self):
         self.assertEqual(installer.resolve_release(None, ARM64), ARM_LATEST)
-        with self.assertRaisesRegex(ValueError, "No published All-in-One preview for linux/arm64"):
+        with self.assertRaisesRegex(ValueError, "No published All-in-One release for linux/arm64"):
             installer.resolve_release(LATEST, ARM64)
 
 
@@ -148,7 +148,7 @@ class PackageTests(unittest.TestCase):
         self.assertEqual(installer.read_manifest(self.folder, None, AMD64), manifest)
 
     def test_rejects_wrong_pinned_release_and_changed_archive(self):
-        with self.assertRaisesRegex(ValueError, "selected All-in-One preview"):
+        with self.assertRaisesRegex(ValueError, "selected All-in-One release"):
             installer.read_manifest(self.folder, EARLY, AMD64)
         self.archive.write_bytes(b"X" * self.manifest["archive_bytes"])
         with self.assertRaisesRegex(ValueError, "tar.gz SHA-256"):
@@ -182,7 +182,7 @@ class PackageTests(unittest.TestCase):
             installer.read_manifest(self.folder, ARM_LATEST, ARM64)
         manifest["platform"] = AMD64
         manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
-        with self.assertRaisesRegex(ValueError, "selected All-in-One preview"):
+        with self.assertRaisesRegex(ValueError, "selected All-in-One release"):
             installer.read_manifest(self.folder, ARM_LATEST, ARM64)
 
     def test_zstd_preferred_for_modern_docker_with_usable_archive(self):
@@ -323,7 +323,7 @@ class VolumeTests(unittest.TestCase):
         for actual, message in (
             (expected, None),
             ({installer.OWNER: "another-trial", installer.RELEASE: LATEST}, "another deployment"),
-            ({installer.OWNER: "aiv-trial", installer.RELEASE: EARLY}, "different preview"),
+            ({installer.OWNER: "aiv-trial", installer.RELEASE: EARLY}, "different All-in-One release"),
         ):
             with self.subTest(actual=actual), patch.object(
                 installer, "output", side_effect=["aiv-trial-data", json.dumps(actual)],
@@ -355,6 +355,6 @@ class SampleTraceTests(unittest.TestCase):
         with patch.object(installer, "sample_instance", return_value=(LATEST, [55174, 54318])), patch.object(
             installer, "published_assets",
         ) as published:
-            with self.assertRaisesRegex(ValueError, "Select that exact preview"):
+            with self.assertRaisesRegex(ValueError, "Select that exact release"):
                 installer.sample_trace(args, AMD64)
             published.assert_not_called()

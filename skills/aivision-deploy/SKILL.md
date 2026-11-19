@@ -1,6 +1,6 @@
 ---
 name: aivision-deploy
-description: Use when a user wants to install, verify, or upgrade AI Vision with Docker, Compose, Kubernetes, or All-in-One, or needs help registering and getting started on a deployment they just set up.
+description: Use to deploy AI Vision All-in-One Personal Edition on Linux, deploy or upgrade a shared Docker, Compose, or Kubernetes instance, or guide the first user through sign-up and their first Trace.
 ---
 
 # AI Vision Deployment
@@ -13,18 +13,19 @@ assets and the CLI are distributed through
 
 | Situation | Start here |
 |---|---|
-| First try or personal use on a Linux x86-64 or ARM64 Docker host | Recommend [All-in-One Preview](reference/all-in-one.md) when a verified bundle matches the host. One container includes the platform and embedded seekdb, with data in one named Docker volume. After startup, follow [the first-use handoff](#help-the-user-sign-in-and-get-started). |
+| Personal use on a Linux x86-64 or ARM64 Docker host | Use [All-in-One Personal Edition](reference/all-in-one.md) when a verified bundle matches the host. One container runs the platform with embedded seekdb, and one named Docker volume holds its data. After startup, follow [the first-use handoff](#help-the-user-sign-in-and-get-started). |
 | New shared deployment, an external database, or an explicit distributed Docker, Compose or Kubernetes target | Follow the distributed deployment below, including its supported platforms and datastore choices. |
-| Existing instance | Keep its mode, datastore and identity. Use the [All-in-One operations guide](reference/all-in-one.md#stop-restart-or-recreate) for an existing preview or the [distributed upgrade workflow](reference/upgrade.md) for an existing distributed installation. |
+| Existing instance | Keep its mode, datastore and identity. Use the [All-in-One operations guide](reference/all-in-one.md#stop-restart-or-recreate) for an existing personal installation, or the [distributed upgrade workflow](reference/upgrade.md) for an existing distributed installation. |
 
-Check the Docker host separately from the browser or Agent machine. If no
-verified preview bundle matches the Linux host, check the distributed target's
-platform support or use an eligible Linux VM for the trial. Honor an explicit
-deployment or version choice. The steps below apply to distributed deployments.
+Check the Docker host separately from the browser or Agent machine. If a
+matching All-in-One release is unavailable, check for a verified local bundle
+or compatible distributed deployment assets. Use a Linux VM when the machine
+running the browser or Agent cannot host the personal edition. The steps below
+cover distributed deployments.
 
 ## Upgrade an existing installation
 
-For an upgrade request, use the [existing-installation workflow](reference/upgrade.md)
+For a distributed upgrade, use the [existing-installation workflow](reference/upgrade.md)
 before the new-install steps below. Let the matching `aiv` CLI perform the
 lifecycle. Preserve the original target, namespace, state, datastore, credentials
 and history bound; resolve one published product version for all five images.
@@ -42,8 +43,8 @@ checkout and matching images instead of selecting a published channel. Follow
 local evidence does not establish a published Release or Daily.
 
 For a new deployment with no version preference, offer **Release** (the default,
-latest published stable version) or **Daily** (latest successfully published
-preview build). Honor an explicit version or channel without asking again.
+latest published stable version) or **Daily** (latest published Daily build).
+Honor an explicit version or channel without asking again.
 If the user delegates the choice, use Release. For an existing deployment,
 inspect its saved configuration and actual version first; retries keep that
 combination, and upgrades use the channel or version the user requested.
@@ -70,8 +71,8 @@ entry points differ and Kubernetes needs a cluster that already exists:
 
 | Target | What it requires | Command shape | Depth |
 |---|---|---|---|
-| **Docker** (default, the usual answer) | a running Docker daemon | `aiv cast --var …` | [reference/docker.md](reference/docker.md) |
-| **Docker Compose** (optional, current source) | Matching aiv, Docker, Compose 2.27+, matching deployment assets/images; no host Python/controller | `aiv cast --target compose …` | [product Compose](reference/docker.md#product-compose-source-version) |
+| **Docker** (default) | A running Docker daemon | `aiv cast --var …` | [reference/docker.md](reference/docker.md) |
+| **Docker Compose** | A compatible `aiv`, Docker Compose 2.27+, and matching product assets | `aiv cast --target compose …` | [product Compose](reference/docker.md#product-compose-source-version) |
 | **Kubernetes** | `kubectl` plus an existing cluster: Kubernetes 1.33–1.36, admin rights, a default StorageClass, ≥4 CPU / 16Gi and ~140Gi disk | `aiv cast --target kubernetes --context <ctx> --vars-file ./aivision.k8s.vars.yaml` | [reference/kubernetes.md](reference/kubernetes.md) |
 
 For Compose, retain `--target compose` on every CLI operation. The Go CLI calls
@@ -82,11 +83,6 @@ native Compose with lifecycle guards. Follow the
 deployment commands on this page apply to Docker. Kubernetes supports bundled
 OceanBase CE through OB Operator. Check its limits on datastore selection and
 Langfuse v1 reads in the Kubernetes recipe.
-
-Helm deployment is a committed follow-up and is currently unavailable. This
-delivery provides no product Chart or supported Helm commands; use the fixed
-Kubernetes CLI path. Future Helm work does not provide a runnable installation
-or automatic adoption of existing resources.
 
 Use `frontend`, `backend`, `diagnosis`, `ingest-gateway`, `data-backend` and
 `database` as product component names. The bundled [component compatibility](reference/operations.md#component-names-and-configuration)
@@ -384,8 +380,7 @@ on other machines, override `BIND_ADDR` and `PUBLIC_HOST` as described in
   not an established equivalent.
 - Do not claim the deployment works without target-specific status, a reachable
   web port and the authenticated telemetry checks in the verification recipe.
-- Keep the authentication gate detection-based rather than baking "private" or
-  "public" into commands, so the skill survives the visibility change.
+- Check access to the exact Release or image before asking the user to authenticate.
 
 ## Troubleshooting
 
@@ -403,8 +398,8 @@ on other machines, override `BIND_ADDR` and `PUBLIC_HOST` as described in
 
 Skill detail:
 
-- [reference/all-in-one.md](reference/all-in-one.md) — quick trial and personal
-  deployment, online or offline install, Agent onboarding and volume retention
+- [All-in-One Personal Edition](reference/all-in-one.md) for online or offline
+  install, Agent onboarding, and volume retention
 - [reference/docker.md](reference/docker.md) — Docker target: the one command, the
   component/port table, selecting seekdb, reusing an existing database, a second isolated stack,
   serving users beyond the local host
@@ -417,5 +412,4 @@ Manual user steps: [Docker deployment](https://aivision.mintlify.site/en/deploym
 and [Kubernetes deployment](https://aivision.mintlify.site/en/deployment/kubernetes).
 
 Bundled operator details: [component compatibility, history limits, backup and recovery](reference/operations.md).
-The matching released CLI embeds product deployment assets. This repository does
-not build images, publish a Chart or grant access to product Releases or packages.
+The matching product CLI embeds the distributed deployment assets.

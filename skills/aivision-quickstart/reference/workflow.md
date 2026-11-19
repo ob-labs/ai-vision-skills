@@ -15,31 +15,15 @@ installed first, use the
 
 Create an account at `/register` when self-registration is enabled, or sign
 in at `/login`. Registration signs the user in and creates a personal Space.
-Join a team Space through its invitation, then select that Space. For a
-CLI session, choose a profile for this instance and account. Use the existing
-CLI's account workflow:
-
-```sh
-: "${AIVISION_URL:?Set the reachable platform root URL}" "${DEMO_EMAIL:?Set your email}" \
-  "${DEMO_PROFILE:?Choose the profile for this instance and account}"
-aiv auth login --profile "$DEMO_PROFILE" --endpoint "$AIVISION_URL" --email "$DEMO_EMAIL"
-aiv auth status --profile "$DEMO_PROFILE"
-```
-
-A new account uses `aiv auth register` with the same endpoint/profile/email;
-it prompts for a name and hidden password. Registration may be disabled: use an
-existing authorized account instead. Browser and CLI sessions are separate.
-If `aiv` is missing, follow the
-[bundled CLI installation](install-cli.md),
-including PATH repair and the installed version's `--help` checks. Browser-only
-setup/readback does not require the CLI. Never import an account Cookie as a
-SpaceKey or print `aiv auth print-env` into a transcript.
+To use a team Space, accept its invitation and select it in AI Vision.
+Use the browser for setup and Trace readback. [CLI readback](#3-verify-trace-and-session-before-diagnosis)
+is also available with a compatible `aiv` and a query SpaceKey.
 
 For model-backed diagnosis, open **Model connections** at
 `/model-connections?spaceId=<SPACE_UUID>`. Reuse a matching connection or
 create a clearly named demo connection using the user's private API base URL,
-model ID and key. For providers without a preset, select **Custom
-OpenAI-compatible** and enter the provider's actual model ID. The standalone
+model ID and key. For providers without a preset, select
+**Custom · OpenAI compatible** and enter the provider's model ID. The standalone
 runner reads the provider credentials from its own private config. Trace
 collection and rule-only diagnosis can proceed without a saved model connection.
 
@@ -85,20 +69,18 @@ or revoke a key used by an existing application.
 | `space_id` | The selected Space UUID |
 | `agent_uuid` | Test Agent UUID, corresponding to `LANGFUSE_PUBLIC_KEY` |
 | `space_key` | Same-Space SpaceKey, corresponding to `LANGFUSE_SECRET_KEY` |
-| `provider_base_url` | The user's OpenAI-compatible model API base |
+| `provider_base_url` | The user's API base for OpenAI-compatible Chat Completions |
 | `provider_api_key` | The provider key, separate from the platform SpaceKey |
 | `model` | The selected actual model ID |
 
-Create a `0700` directory outside the repository. Put exactly those seven string
-fields in `private.json` with `0600` permissions, filling keys from a private
-file/secret input without printing them. No key is bundled with this Skill.
-Ask for a private source only when it is missing; do not search unrelated `.env`
-files or depend on another user's account, home directory or temporary helper.
-This reusable runner is for a fresh standalone process; it leaves existing
-Agent configuration untouched and scopes SDK/exporter settings to that process.
+Choose a private `DEMO_DIR` outside the repository and create it with mode
+`0700`. Save the seven string fields as `private.json` with mode `0600`.
+Fill keys from a private input supplied for this run and keep them out of
+command arguments and output. Run the demo in a standalone process to keep
+its SDK and exporter settings separate from the user's application.
 
-Resolve `SKILL_ROOT` to this **installed Skill's** directory, not the current
-working directory. Choose a new private `DEMO_DIR`, then use Python 3.11+:
+Set `SKILL_ROOT` to the installed Skill directory. Use Python 3.11 or later
+to create an isolated environment and view the offline plan:
 
 ```sh
 : "${SKILL_ROOT:?Set the installed aivision-quickstart directory}" \
@@ -106,17 +88,22 @@ working directory. Choose a new private `DEMO_DIR`, then use Python 3.11+:
 python3 -m venv "$DEMO_DIR/.venv"
 "$DEMO_DIR/.venv/bin/python" -m pip install -r "$SKILL_ROOT/scripts/requirements.txt"
 "$DEMO_DIR/.venv/bin/python" "$SKILL_ROOT/scripts/run_demo.py"
+```
+
+Once the user authorizes the real model calls, run the demo with a new output
+directory:
+
+```sh
 "$DEMO_DIR/.venv/bin/python" "$SKILL_ROOT/scripts/run_demo.py" --execute \
   --config "$DEMO_DIR/private.json" --out "$DEMO_DIR/run-1"
 ```
 
-The package pins reproduce the example's direct SDK versions, not the minimum
-supported SDKs for an existing application. The runner has no synthetic-model
-fallback. It sends four non-streaming requests (60-second timeout, at most 1024
-output tokens each, zero provider retries): two conversational turns and two
-turns using real Decimal results, including division by zero. Tool selection is
-local orchestration, not an autonomous model tool decision. Actual provider
-usage is stored; missing usage/cost stays unknown.
+The dependency pins apply to this standalone example. A complete run sends four
+non-streaming requests with a 60-second timeout, a 1024-token output limit and
+zero provider retries. The last two requests use local Decimal calculations,
+including a handled division by zero. The script selects and runs the tool
+locally. It records reported Token usage and leaves missing usage or cost
+unknown.
 
 `run.json` and `attempts.jsonl` preserve private inputs/outputs, SDK versions,
 real IDs and the time window. Their existence does not prove ingestion.
@@ -137,23 +124,29 @@ sending more model requests. In the UI use the selected Space and test Agent:
 - Trace: `/trace?spaceId=<S>&agent=langfuse&agent_uuid=<A>&traceId=<T>&from=<ISO_UTC>&to=<ISO_UTC>`.
 - Session: the same route with `view=session&sessionId=<ID>`.
 
-The runner supplies ISO-dated browser links, plus a diagnosis link; numeric
-`from_ms`/`to_ms` remain available for CLI reads. Check all four Traces,
-both Sessions with exactly their two member Traces, model generation and tool
-parentage, original input/output, the actual tool exception and provider usage.
-Keep missing fields visible. Native unknown usage is `null`; legacy v1 integer
-placeholders are not evidence of actual zero usage. Default newer-SDK v2 reads
-are not the platform's v1 compatibility contract.
+The runner supplies browser links with ISO dates, plus a diagnosis link.
+For a complete run, verify four Traces and two Sessions with two Traces each.
+Inspect the model and tool calls, their parentage, inputs, outputs, the handled
+tool error, and reported usage. For a partial run, inspect the attempted
+requests and report any missing records. Treat native `null` usage and legacy
+v1 integer placeholders as unknown.
 
-For CLI readback select the same Space in `DEMO_PROFILE` and create
-or privately import its query SpaceKey when needed. Inspect `--help` first; use
-the [bundled profile setup](query-setup.md). These detail calls require explicit
-epoch-millisecond bounds:
+For optional CLI readback, use a compatible `aiv`. Follow the
+[installation guide](install-cli.md) if needed. Set `ENDPOINT` and `SPACE_ID` to
+the instance and Space from the run, use `AGENT_PRODUCT=langfuse`, and follow the
+[query profile setup](query-setup.md) to verify the profile and its SpaceKey.
+Check the installed commands' help. Pass the recorded bounds in epoch
+milliseconds as detail parameters:
 
 ```sh
-: "${TRACE_ID:?Select an ID from run.json}" "${SESSION_ID:?Select an ID from run.json}"   "${AGENT_UUID:?Set the test Agent UUID}" "${FROM_MS:?Use run.json from_ms}"   "${TO_MS:?Use run.json to_ms}"
-aiv query trace get "$TRACE_ID" --profile "$DEMO_PROFILE" --agent-product langfuse   --param agent_uuid="$AGENT_UUID" --param from="$FROM_MS" --param to="$TO_MS" --format json
-aiv query session get "$SESSION_ID" --profile "$DEMO_PROFILE" --agent-product langfuse   --param agent_uuid="$AGENT_UUID" --param from="$FROM_MS" --param to="$TO_MS" --format json
+: "${PROFILE:?Set the verified query profile}" \
+  "${TRACE_ID:?Select an ID from run.json}" "${SESSION_ID:?Select an ID from run.json}" \
+  "${AGENT_UUID:?Set the test Agent UUID}" "${FROM_MS:?Use run.json from_ms}" \
+  "${TO_MS:?Use run.json to_ms}"
+aiv query trace get "$TRACE_ID" --profile "$PROFILE" --agent-product langfuse \
+  --param agent_uuid="$AGENT_UUID" --param from="$FROM_MS" --param to="$TO_MS" --format json
+aiv query session get "$SESSION_ID" --profile "$PROFILE" --agent-product langfuse \
+  --param agent_uuid="$AGENT_UUID" --param from="$FROM_MS" --param to="$TO_MS" --format json
 ```
 
 Do not replace detail bounds with `--since/--until`; those shortcuts are not
@@ -212,8 +205,8 @@ A completed task with failed records is a **partial diagnostic result**.
 Leave authorized demo resources for manual review. Deliver the platform
 version, model (and saved connection when used), test Agent, actual request,
 Trace and Session counts, verified links and inspection window. Include the
-actual successful and handled-tool-error examples that were read back, and
-report diagnosis task and record outcomes if diagnosis ran. Include two or three
-clicks the user can try next. Share no key, Cookie or raw secret-bearing receipt.
+successful call and handled tool error that were read back, and report diagnosis
+task and record outcomes if diagnosis ran. Keep credentials, session cookies and
+private reports out of shared output.
 For long-term work connect the user's existing Agent using its own onboarding
 path; do not replace it with the demo.

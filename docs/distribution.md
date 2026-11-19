@@ -24,8 +24,7 @@ the relevant access separately.
 
 ## Historical deliveries
 
-The restricted-trial Daily and All-in-One Releases in this catalog were
-retired. The existing Git tags identify historical snapshots. Historical
-manifests, image digests, build identities, and qualification records describe
-their original scope. Active installation paths use the product distribution
-endpoints above.
+The original trial Releases and Git tags have been retired. Historical
+delivery records refer to their source commits, manifests, image digests,
+and qualification results. Install Skills from the catalog's default branch.
+Use the product distribution endpoints above for deployment assets.

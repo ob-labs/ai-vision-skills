@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Send a synthetic trace to a loopback All-in-One preview."""
+"""Send a synthetic trace to an All-in-One instance on loopback."""
 
 import argparse
 import getpass

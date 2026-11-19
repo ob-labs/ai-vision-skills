@@ -1,50 +1,46 @@
 ---
 name: aivision-quickstart
-description: Use when a user wants to try AI Vision on a reachable platform, explore its examples, connect a first Agent or SDK, or run a live test workload to verify Traces, Sessions and diagnosis.
+description: Use when a user wants to try AI Vision on an existing instance, open a built-in example, connect a first Agent or SDK, or verify Traces and Sessions from the bundled demo.
 ---
 
 # AI Vision Quickstart
 
-Start from the user's existing instance and selected Space. Help the user
-find a Trace, inspect the evidence for one call, and continue to a Session or
-diagnosis when the selected path supports it. If the user still needs a
-platform, use the [deployment Skill](https://github.com/ob-labs/ai-vision-skills/tree/main/skills/aivision-deploy).
-Have the user open `/register` for a new account or `/login` for an existing
-one. If registration is disabled, use an authorized account or a team invitation.
+Confirm the user's instance and Space. Help them open a Trace and inspect one
+model or tool call that belongs to it. Continue to a Session or diagnosis when
+the chosen example supports it. If the user needs an instance, use the
+[deployment Skill](https://github.com/ob-labs/ai-vision-skills/tree/main/skills/aivision-deploy).
+For a first sign-in, use `/register` if registration is enabled, or sign in at
+`/login` with an authorized account. Follow the team invitation if needed.
 
 ## Choose a first experience
 
 | User goal | Follow this path |
 |---|---|
-| See the product without a model key | Open **Help → Getting started**. If **Try an example** is available, have the user pick and confirm a scenario. Use the chosen example or full walkthrough to inspect a Trace and, when relevant, its Session or built-in rule result. Keep its simulated activity, usage and cost labeled as demo data. |
-| Connect an existing Agent or SDK | Open **Agent Access** at `/access` and follow the deployed version's integration guide. Use the guide's generated configuration and runnable example for the user's language/framework, or generate its Agent installation command. Run a recognizable task and verify its Trace in the same Space and Agent. |
-| Run a live evaluation with help from the coding Agent | Follow [the live demo workflow](reference/workflow.md). The bundled Python example sends real requests from an isolated test Agent and preserves identifiers and request counts for readback. |
+| Explore example traces without a model key | Open **Help → Try an example** when available. Let the user choose a scenario and confirm creation of sample data in the selected Space. Open an example Trace and keep simulated Token usage and cost labeled as demo data. |
+| Connect an Agent or SDK | Open **Agent Access** at `/access` and follow the selected integration's guide. Use its generated configuration and example for the user's framework, or its Agent installation command. Run a recognizable task and open its Trace in the same Space and Agent. For an SDK example, use **Verify this Trace** when available. |
+| Run the bundled demo with a real model | Follow [the live demo workflow](reference/workflow.md) for the isolated test Agent, request budget, and exact Trace and Session IDs. |
 
-Use the installed UI for examples and setup instructions. When a guide or demo
-is unavailable, explain the capability or access gap and use the relevant
-[manual first-Agent tutorial](https://aivision.mintlify.site/en/web-quickstart)
-or the user's authorized live-demo path.
+Use **Help → Getting started** to start the walkthrough, or resume it from the
+same menu. If the deployed instance lacks the example or integration guide, use the
+[first-Agent tutorial](https://aivision.mintlify.site/en/web-quickstart).
 
 ## Run and verify the live demo
 
-1. Confirm the reachable URL, actual version, Space, test Agent and a private
-   source for model credentials. The demo needs an OpenAI-compatible endpoint.
-   Have the user supply secrets locally. Use a matching Model Connection
-   when model-backed diagnosis is requested.
+1. Confirm the reachable URL, version, Space, test Agent, and OpenAI-compatible
+   Chat Completions endpoint. Have the user supply credentials locally.
 2. Run the bundled [demo](scripts/run_demo.py) in an isolated environment. The
-   default command is offline planning. An authorized live run uses
-   `--execute --config <private.json> --out <new-run-directory>`. It sends up to
-   four model requests in two two-turn Sessions with no provider retries.
-   Honor a smaller budget using the deployed integration's example. Connection
-   tests, validation and model-backed diagnosis make additional requests.
-3. Verify the exact generated Trace and Session IDs in the recorded Space,
-   Agent and window. Inspect inputs, outputs, usage and the handled tool error.
-   If supported and in scope, run one Quick Diagnosis on those Traces. Use one
-   persisted request ID, check task and record states, and explain failed,
-   skipped or missing results.
-4. Hand back verified links, the actual request count and usage, and one
-   concrete observation. Preserve demo state for the user's own review and
-   keep secrets and private receipts out of shared output.
+   default command prints an offline plan. With authorization for model calls,
+   use `--execute --config <private.json> --out <new-run-directory>`. A complete
+   run sends four requests across two Sessions with zero provider retries.
+   Use a smaller integration example when the user sets a smaller budget.
+   Model connection tests, validation, and model-backed diagnosis use
+   additional requests.
+3. Open the exact Trace and Session links in the report. Verify the Space,
+   Agent and time window, then inspect the calls and handled tool error that
+   actually appear. If requested and supported, run one Quick Diagnosis as
+   described in the workflow and check its task and records.
+4. Report the actual request count, verified links, observed usage, and any
+   missing evidence. Keep secrets and private reports out of shared output.
 
 Use [aivision-trace](https://github.com/ob-labs/ai-vision-skills/tree/main/skills/aivision-trace)
 or [aivision-metric](https://github.com/ob-labs/ai-vision-skills/tree/main/skills/aivision-metric)

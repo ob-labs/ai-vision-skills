@@ -6,7 +6,7 @@ Codex、Claude Code などの対応エージェントで、AI Vision のデプ�
 
 ## `npx skills` でインストール
 
-プロジェクトのディレクトリで次のコマンドを実行します。リポジトリへのアクセスが制限されている場合は、アクセス権のある自分の GitHub 認証情報を使ってください。
+Node.js 22.20 以降を使い、プロジェクトのディレクトリで次のコマンドを実行します。
 
 ```bash
 npx skills add ob-labs/ai-vision-skills --list
@@ -19,13 +19,13 @@ npx skills add ob-labs/ai-vision-skills --skill aivision-deploy --agent codex
 
 | スキル | 用途 |
 | --- | --- |
-| [aivision-deploy](skills/aivision-deploy/SKILL.md) | AI Vision のデプロイやアップグレード、サービスの動作確認、初回のユーザー登録と利用開始を支援します。 |
+| [aivision-deploy](skills/aivision-deploy/SKILL.md) | All-in-One 個人版のセットアップや共有インスタンスの導入・アップグレードを支援します。ユーザー登録から最初のトレースの確認まで進めます。 |
 | [aivision-quickstart](skills/aivision-quickstart/SKILL.md) | 稼働中の AI Vision で、画面のガイドまたはエージェントによるデモを使い、最初のトレースやセッションを確認します。 |
 | [aivision-trace](skills/aivision-trace/SKILL.md) | トレースを検索し、スパンやセッションの情報を確認したり、選んだトレースをエクスポートしたりできます。 |
 | [aivision-metric](skills/aivision-metric/SKILL.md) | リクエスト数、エラー、レイテンシを確認します。データがある場合はトークン使用量やコストも確認できます。 |
 
 インストール後は、会話でスキル名を指定します。たとえば「`aivision-quickstart` を使って、稼働中の AI Vision で最初のトレースを生成し、確認したい」と依頼します。
 
-このリポジトリではスキルとその付属ファイルを配布します。製品のバイナリやデプロイ用のファイルは [AI Vision Releases](https://github.com/antgroup/ai-vision/releases) で確認できます。
+このリポジトリではスキルと付属ファイルを配布します。お使いの環境に対応する製品バイナリやデプロイ用のパッケージは [AI Vision Releases](https://github.com/antgroup/ai-vision/releases) で確認できます。
 
 [コントリビューションガイド](CONTRIBUTING.md) · [Apache-2.0](LICENSE)

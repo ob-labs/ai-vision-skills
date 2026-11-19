@@ -5,7 +5,7 @@ Each directory contains an independently installable Skill. Start with its
 
 | Skill | When to use it |
 | --- | --- |
-| [aivision-deploy](aivision-deploy/SKILL.md) | Set up or upgrade a deployment and onboard its first user. |
+| [aivision-deploy](aivision-deploy/SKILL.md) | Set up an All-in-One Personal Edition or shared deployment and onboard its first user. |
 | [aivision-quickstart](aivision-quickstart/SKILL.md) | Start from an existing platform and generate and inspect your first traces. |
 | [aivision-trace](aivision-trace/SKILL.md) | Query, inspect, or export traces from an existing workload. |
 | [aivision-metric](aivision-metric/SKILL.md) | Query trace and usage metrics and interpret coverage. |
