@@ -17,10 +17,11 @@ unused ports if another service already uses either one.
 ### Run the installer directly
 
 Check [AI Vision Releases](https://github.com/antgroup/ai-vision/releases) for
-an All-in-One release with the assets for your host. In an empty directory,
-set `release_tag` to its exact tag and use `gh` to download the installer and
-checksum list. Sign in to GitHub CLI if prompted. Until a matching bundle is
-published, use a trusted local bundle, a compatible
+a Daily prerelease tagged `vX.Y.Z-daily.YYYYMMDD[.N]` with All-in-One assets
+for your host. In an empty directory, set `release_tag` to its exact tag and
+use `gh` to download the installer and checksum list. Sign in to GitHub CLI
+if prompted. If a compatible Daily is unavailable, use a trusted local
+bundle, a compatible
 [distributed release](../SKILL.md#choose-release-or-daily), or an existing
 instance.
 
@@ -38,7 +39,8 @@ gh release download "$release_tag" --repo antgroup/ai-vision \
 From the installed `aivision-deploy` Skill, set `AIV_SKILL_DIR` to the absolute
 path of that directory. Use the same product repository. Resolve and display the tag
 before installing. Without `--tag`, the installer uses the most recently
-published compatible All-in-One release.
+published compatible All-in-One release for that Linux architecture. Daily
+releases without Personal Edition assets are skipped.
 
 ```sh
 : "${AIV_SKILL_DIR:?Set this to the installed aivision-deploy directory}"
@@ -50,8 +52,9 @@ release_tag=$(python3 "$installer" --resolve) &&
 
 Keep `release_tag` for retries and recreation. The installer checks the Docker
 daemon, instance name and local ports before downloading. It verifies the
-selected archive and loads it into Docker. This installation uses Release
-assets and embedded seekdb.
+Daily's architecture manifest against the shared release manifest, verifies
+the selected image archive and loads it into Docker. The container uses
+embedded seekdb.
 
 On Docker Server 23 or later, the installer prefers a verified `.tar.zst`
 archive when available. The `.tar.gz` archive also works with older servers.
@@ -66,18 +69,19 @@ is running. The named data volume is separate from this cache.
 For a local or offline install, transfer the complete verified candidate or the
 matching [product Release](https://github.com/antgroup/ai-vision/releases)
 assets into a single directory. Use the installer bundled with this Skill or
-the verified release installer. The asset directory needs `SHA256SUMS` and
-the files for your host listed below.
+the verified release installer. Keep the original `SHA256SUMS`, the Daily's
+shared `release-manifest.json`, and the files for your host listed below.
 
 | Docker host | Manifest | Choose one image archive | CLI |
 |---|---|---|---|
-| Linux x86-64 | `all-in-one-manifest.json` | `aiv-all-in-one-linux-amd64.tar.zst` or `.tar.gz` | `aiv-linux-x64.tar.gz` when included |
+| Linux x86-64 | `all-in-one-manifest.json` | `aiv-all-in-one-linux-amd64.tar.zst` or `.tar.gz` | `aiv-linux-x64.tar.gz` |
 | Linux ARM64 | `all-in-one-manifest-arm64.json` | `aiv-all-in-one-linux-arm64.tar.zst` or `.tar.gz` | `aiv-linux-arm64.tar.gz` |
 
 Verify the files before running the installer. This path works without `gh` on
-the Docker host. Check that your host's manifest and chosen image archive are
-present and report `OK`. Check the CLI archive and sample helper as well if you
-plan to use them. The checksum command skips files for other architectures.
+the Docker host. Check that both manifests, the chosen image archive and the
+matching CLI archive are present and report `OK`. Add the verified
+`sample-trace.py` if you want to try the example from a terminal. The checksum
+command skips files absent from the directory.
 
 ```sh
 : "${installer:?Set this to the absolute path to install-all-in-one.py}"
@@ -104,11 +108,11 @@ ssh -N -o ExitOnForwardFailure=yes \
 
 ## View a sample Trace
 
-If the release or offline bundle includes `sample-trace.py`, sign in to AI
-Vision and run the installer with `--sample-trace` on the Linux Docker host.
-This creates a synthetic Trace to explore the UI with zero model calls.
-If the sample helper is unavailable, use the built-in guide or connect an
-Agent below.
+After registering, run the installer with `--sample-trace` on the Linux
+Docker host if the release or offline bundle includes `sample-trace.py`.
+The Daily helper imports or reuses the platform's built-in synthetic example
+in your personal Space with zero model calls. You can also open it from
+**Help → Try an example** in the browser, or connect an Agent below.
 
 Use the installer path from the installation step. If you opened a new shell
 after installing from the Skill, set `installer` to the Skill's script again.
@@ -121,12 +125,12 @@ Use the same `--name` for a custom instance. The installer reads its existing
 ports, then uses the matching release's sample helper. For an offline install, include
 `sample-trace.py` from that release and add `--from-dir "$PWD"`.
 
-Enter the existing local AI Vision account's email and password at the
-prompt. The terminal hides the password. Open the returned Trace link in the
-browser while signed in to the same account. The Trace appears under the
-sample space and Agent and is labeled as synthetic. On a VM, keep the Web
-port forwarded while opening the link. AgentLens remains available for rule
-diagnosis. Connect your own Agent below when you want to see its telemetry.
+Confirm the import and enter your local AI Vision account's email and password
+when prompted. The terminal hides the password. Open the returned Trace link
+in the browser while signed in to the same account. The example is labeled as
+synthetic. On a VM, keep the Web port forwarded while opening the link.
+AgentLens remains available for rule diagnosis. Connect your own Agent below
+when you want to see its telemetry.
 
 ## Connect an Agent and find its Trace
 
@@ -154,8 +158,9 @@ an installation authorization.
      python3 "$installer" --tag "$release_tag" --install-cli
    ```
 
-   For an offline Agent machine, transfer the installer, `SHA256SUMS`, the
-   manifest for that architecture and its matching CLI archive. Use
+   For an offline Agent machine, transfer the installer, `SHA256SUMS`,
+   the Daily's `release-manifest.json`, the manifest for the Agent architecture
+   and its matching CLI archive. Use
    `python3 "$installer" --from-dir "$PWD" --install-cli` from that directory.
    The CLI-only install requires no Docker. An older x86-64 bundle whose CLI
    came from a separate base release needs a verified copy
