@@ -1,0 +1,32 @@
+tests/test_live_quickstart.py
+  s_80270f50a78a8e::t_1abbd5034eafdb 1-101
+.github/workflows/live-quickstart.yml
+  s_80270f50a78a8e::t_8fd432496df14d 43-50
+  s_80270f50a78a8e::t_f62fd3b2d1e9be 1-32,59-62,64-67
+  s_80270f50a78a8e::t_a71867d4548660 63
+  s_80270f50a78a8e::t_baf4ea0a08f870 33-42,51-58
+CONTRIBUTING.md
+  s_80270f50a78a8e::t_8fd432496df14d 32-34
+  s_80270f50a78a8e::t_030c69ef3d08ed 35
+scripts/check_live_quickstart.py
+  s_80270f50a78a8e::t_8cf2eeb2f25bc5 137,179,188-194
+  s_80270f50a78a8e::t_ead2918af73129 1-136,138-178,180-187,195-261
+scripts/live_quickstart_browser.cjs
+  s_80270f50a78a8e::t_d79619d41b03cb 1-188
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "0fa0731350aa2a447a85136bead73754ff52c94c",
+  "prompts": {},
+  "sessions": {
+    "s_80270f50a78a8e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f19d-1985-7b22-82e9-068aafc03da7",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "Haili Zhang <2936504+webup@users.noreply.github.com>"
+    }
+  }
+}
