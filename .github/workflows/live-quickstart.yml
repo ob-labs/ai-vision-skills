@@ -17,8 +17,6 @@ jobs:
     if: github.repository == 'ob-labs/ai-vision-skills'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
-    env:
-      PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/aiv-quickstart-chromium
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
@@ -57,11 +55,15 @@ jobs:
             exit 1
           fi
       - name: Install pinned Chromium test tools
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/aiv-quickstart-chromium
         run: |
           browser_tools="$RUNNER_TEMP/aiv-quickstart-browser"
           npm install --prefix "$browser_tools" --no-save --package-lock=false --ignore-scripts --no-audit --no-fund @playwright/test@1.58.2
           "$browser_tools/node_modules/.bin/playwright" install --with-deps --only-shell chromium
       - name: Deploy the latest public Personal Edition and verify the browser example
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/aiv-quickstart-chromium
         run: |
           export NODE_PATH="$RUNNER_TEMP/aiv-quickstart-browser/node_modules"
           python3 -B scripts/check_live_quickstart.py
