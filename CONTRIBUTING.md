@@ -29,6 +29,10 @@ The `catalog` check runs on pull requests and pushes to `main` using a hosted Ub
 
 The [public installation workflow](.github/workflows/public-install.yml) runs after pushes to `main`, on a schedule, and on demand. It lists the public catalog and installs the deployment and Quickstart Skills into clean Codex projects using the current npm CLI without GitHub credentials. It compares the results with the `main` commit being checked. Check this workflow separately for problems with public GitHub access or upstream CLI compatibility.
 
+The [live All-in-One Quickstart workflow](.github/workflows/live-quickstart.yml) runs weekly and on demand. It verifies and installs the latest published Daily that includes Personal Edition, registers a disposable user in Chromium, and reads back the built-in synthetic Session, Trace, and tool span in that user's personal Space. The run uses no model credentials and cleans up its temporary deployment.
+
+For a local rehearsal, use a Linux Docker daemon with the classic image store, Node.js, and the pinned Playwright browser tools from the workflow. The released installer compares the loaded image ID with the published configuration digest, so the workflow selects the classic image store on its disposable runner. Run `python3 -B scripts/check_live_quickstart.py` with `NODE_PATH` and `PLAYWRIGHT_BROWSERS_PATH` set as in the workflow. The optional `--cache-dir` reuses an archive from the official Release after checking its SHA-256.
+
 Security scans are handled by the team's existing offline/manual process. Do not add security scanner CI, scan-result gates, or mandatory SBOM/report generation as part of catalog maintenance.
 
 ## Review and publication
