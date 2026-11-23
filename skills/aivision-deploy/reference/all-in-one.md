@@ -60,9 +60,43 @@ is running. The named data volume is separate from this cache.
 
 Identify the published Daily with All-in-One assets for the Docker host.
 Show its exact tag, then use the [verified Release installer](#run-the-installer-directly)
-on that host. Use the [offline bundle workflow](#install-offline) when the
-user supplies local assets. After startup, help the user register or sign in
+on that host. If the image download stalls, offer the user the
+[optional download proxy](#speed-up-a-slow-download). Use the
+[offline bundle workflow](#install-offline) when the user supplies local
+assets. After startup, help the user register or sign in
 and [open their first Trace](../SKILL.md#help-the-user-sign-in-and-get-started).
+
+### Speed up a slow download
+
+Start with the official Release download. If it stalls or times out, you can
+prefix the public image archive URL with `https://ghfast.top/` or
+`https://gh-proxy.org/`. Both proxies delivered the complete ARM64 `.tar.zst` for
+[Daily `v0.6.0-daily.20261123.2`](https://github.com/antgroup/ai-vision/releases/tag/v0.6.0-daily.20261123.2)
+with the official SHA-256. Availability and speed vary by network. Use a
+third-party proxy only if the user chooses it.
+
+Use a separate directory for each Daily tag. Get `SHA256SUMS`, the manifests,
+the CLI, and any installer or sample helper from the official Release. Use the
+proxy only for an anonymous HTTPS download of the public image archive. Keep
+credentials and private URLs out of the proxy request.
+
+Set `release_tag` to the exact Daily tag. Edit `proxy` to choose a host and
+select your archive from the [offline asset table](#install-offline). This
+example uses ARM64. Rerun the same command to resume an interrupted transfer.
+
+```sh
+: "${release_tag:?Set this to the exact All-in-One Daily tag}"
+release_url="https://github.com/antgroup/ai-vision/releases/download/$release_tag"
+archive=aiv-all-in-one-linux-arm64.tar.zst
+proxy=https://ghfast.top
+printf '%s\n' "$release_tag" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+-daily\.[0-9]{8}(\.[0-9]+)?$' &&
+  curl -q --fail --location --proto '=https' --proto-redir '=https' \
+    --continue-at - --output "$archive" "${proxy%/}/$release_url/$archive" &&
+  (awk -v archive="$archive" '$2 == archive { print }' SHA256SUMS | sha256sum --check)
+```
+
+If verification fails, discard the archive. When the archive passes, follow
+[Install offline](#install-offline) to verify the rest of the bundle and install.
 
 ### Install offline
 
