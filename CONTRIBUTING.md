@@ -23,9 +23,11 @@ python3 scripts/check_installation.py
 git diff --check
 ```
 
-The installation check discovers every Skill and copies each one into a separate disposable Codex project. The installer tests exercise release discovery and binary verification with fixtures. The PowerShell installer test uses a POSIX test host, so native Windows qualification requires a separate run. Quickstart exercises its SDK against local HTTP fixtures. State the results of any live deployment, platform access, or model-provider checks separately.
+The installation check discovers every Skill and copies each one into a separate disposable Codex project. The catalog check validates bundled Markdown section links. The installer tests exercise release discovery, binary verification, and the documented install commands with local fixtures. The PowerShell installer test uses a POSIX test host, so native Windows qualification requires a separate run. Quickstart exercises its SDK against local HTTP fixtures. State the results of any live deployment, platform access, or model-provider checks separately.
 
-GitHub Actions runs on pull requests and pushes to `main` using a hosted Ubuntu runner and a read-only checkout token. The validation only needs the catalog checkout and public Python and npm packages.
+The `catalog` check runs on pull requests and pushes to `main` using a hosted Ubuntu runner and a read-only checkout token. It is required for merging to `main` and uses the catalog checkout and public Python and npm packages.
+
+The [public installation workflow](.github/workflows/public-install.yml) runs after pushes to `main`, on a schedule, and on demand. It lists the public catalog and installs the deployment and Quickstart Skills into clean Codex projects using the current npm CLI without GitHub credentials. It compares the results with the `main` commit being checked. Check this workflow separately for problems with public GitHub access or upstream CLI compatibility.
 
 Security scans are handled by the team's existing offline/manual process. Do not add security scanner CI, scan-result gates, or mandatory SBOM/report generation as part of catalog maintenance.
 
