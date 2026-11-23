@@ -1,0 +1,20 @@
+skills/aivision-deploy/reference/all-in-one.md
+  s_80270f50a78a8e::t_4c4079049b1083 21-24,29-30,32-36,41,47-49,59-66,98-99,119-120,123,146-150
+  s_80270f50a78a8e::t_1c2bcb6076a959 42-45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "8d48fee2b48cb7fd17a1873b880feb17f2425fbe",
+  "prompts": {},
+  "sessions": {
+    "s_80270f50a78a8e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f19d-1985-7b22-82e9-068aafc03da7",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "Haili Zhang <2936504+webup@users.noreply.github.com>"
+    }
+  }
+}
