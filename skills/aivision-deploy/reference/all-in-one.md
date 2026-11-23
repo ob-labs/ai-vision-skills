@@ -18,43 +18,35 @@ unused ports if another service already uses either one.
 
 Check [AI Vision Releases](https://github.com/antgroup/ai-vision/releases) for
 a Daily prerelease tagged `vX.Y.Z-daily.YYYYMMDD[.N]` with All-in-One assets
-for your host. In an empty directory, set `release_tag` to its exact tag and
-use `gh` to download the installer and checksum list. Sign in to GitHub CLI
-if prompted. If a compatible Daily is unavailable, use a trusted local
-bundle, a compatible
+for your host. In an empty directory, set `release_tag` to the exact tag.
+Use `curl` and `sha256sum` to download and verify the official installer
+from that Release. Public downloads work without GitHub sign-in.
+If a compatible Daily is unavailable, use a trusted local bundle, a compatible
 [distributed release](../SKILL.md#choose-release-or-daily), or an existing
 instance.
 
 ```sh
-: "${release_tag:?Set this to the exact All-in-One release tag}"
+: "${release_tag:?Set this to the exact All-in-One Daily tag}"
+release_url="https://github.com/antgroup/ai-vision/releases/download/$release_tag"
 installer=./install-all-in-one.py
-gh release download "$release_tag" --repo antgroup/ai-vision \
-  --pattern install-all-in-one.py --pattern SHA256SUMS &&
+printf '%s\n' "$release_tag" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+-daily\.[0-9]{8}(\.[0-9]+)?$' &&
+  curl -q --fail --silent --show-error --location --proto '=https' --proto-redir '=https' \
+    --output "$installer" "$release_url/install-all-in-one.py" &&
+  curl -q --fail --silent --show-error --location --proto '=https' --proto-redir '=https' \
+    --output SHA256SUMS "$release_url/SHA256SUMS" &&
   (grep -E '^[0-9a-f]{64}  install-all-in-one\.py$' SHA256SUMS | sha256sum --check) &&
   python3 "$installer" --tag "$release_tag"
 ```
 
-### Install with a coding Agent
+Keep the verified installer and `release_tag` for retries and recreation.
+The installer checks Docker, the instance name and local ports before
+downloading. It checks the architecture manifest against the shared release
+manifest and verifies the image archive before loading it into Docker.
+The container uses embedded seekdb.
 
-From the installed `aivision-deploy` Skill, set `AIV_SKILL_DIR` to the absolute
-path of that directory. Use the same product repository. Resolve and display the tag
-before installing. Without `--tag`, the installer uses the most recently
-published compatible All-in-One release for that Linux architecture. Daily
-releases without Personal Edition assets are skipped.
-
-```sh
-: "${AIV_SKILL_DIR:?Set this to the installed aivision-deploy directory}"
-installer="$AIV_SKILL_DIR/scripts/install-all-in-one.py"
-release_tag=$(python3 "$installer" --resolve) &&
-  printf 'Installing %s\n' "$release_tag" &&
-  python3 "$installer" --tag "$release_tag"
-```
-
-Keep `release_tag` for retries and recreation. The installer checks the Docker
-daemon, instance name and local ports before downloading. It verifies the
-Daily's architecture manifest against the shared release manifest, verifies
-the selected image archive and loads it into Docker. The container uses
-embedded seekdb.
+When the installer reports healthy, open the reported Web URL and follow the
+[account registration and first-use handoff](../SKILL.md#help-the-user-sign-in-and-get-started).
+If the browser runs outside the Linux VM, [forward the ports](#access-ai-vision-from-a-vm).
 
 On Docker Server 23 or later, the installer prefers a verified `.tar.zst`
 archive when available. The `.tar.gz` archive also works with older servers.
@@ -63,6 +55,14 @@ caches verified downloads under
 `${XDG_CACHE_HOME:-$HOME/.cache}/aivision/all-in-one` and reuses an exact image
 already loaded in Docker on `auto`. Cache files can be removed when no install
 is running. The named data volume is separate from this cache.
+
+### Install with a coding Agent
+
+Identify the published Daily with All-in-One assets for the Docker host.
+Show its exact tag, then use the [verified Release installer](#run-the-installer-directly)
+on that host. Use the [offline bundle workflow](#install-offline) when the
+user supplies local assets. After startup, help the user register or sign in
+and [open their first Trace](../SKILL.md#help-the-user-sign-in-and-get-started).
 
 ### Install offline
 
@@ -95,6 +95,8 @@ actual name, version, ports, and the corresponding `<name>-data` volume.
 When the installer reports healthy, open `http://127.0.0.1:5174` or the
 reported Web URL. Follow the [account registration and first-use handoff](../SKILL.md#help-the-user-sign-in-and-get-started).
 
+### Access AI Vision from a VM
+
 If the browser or Agent runs outside the VM, run the following from that
 client machine and keep the SSH connection open. Use the same port numbers as
 the selected installation so the platform's generated URLs work from the client.
@@ -114,11 +116,11 @@ The Daily helper imports or reuses the platform's built-in synthetic example
 in your personal Space with zero model calls. You can also open it from
 **Help → Try an example** in the browser, or connect an Agent below.
 
-Use the installer path from the installation step. If you opened a new shell
-after installing from the Skill, set `installer` to the Skill's script again.
+Set `installer` to the same verified installer you used for deployment.
+Restore that path when working in a new shell.
 
 ```sh
-python3 "${installer:-./install-all-in-one.py}" --sample-trace
+python3 "${installer:?Set this to the verified installer path}" --sample-trace
 ```
 
 Use the same `--name` for a custom instance. The installer reads its existing
@@ -141,10 +143,11 @@ The Docker host, browser and Agent can be different machines. For a different
 client OS, verify that the selected release supports it before generating
 an installation authorization.
 
-1. Install or reuse the matching Linux `aiv` on the Agent machine. Copy the
-   All-in-One installer there, or set `installer` to the script in the locally
-   installed `aivision-deploy` Skill. Use the exact `release_tag` that installed
-   the platform. The installer selects the matching CLI for the Agent machine,
+1. Install or reuse the matching Linux `aiv` on the Agent machine. For a public
+   Daily, copy the verified Release installer to that machine. For a local
+   bundle, use its verified installer or the script bundled with
+   `aivision-deploy`. Use the exact `release_tag` that installed the platform.
+   The installer selects the matching CLI for the Agent machine,
    verifies its SHA-256, architecture and version, and installs it to
    `~/.local/bin/aiv`.
    It uses the bundle's CLI archive when included. For older x86-64 bundles
