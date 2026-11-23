@@ -7,15 +7,19 @@ checkout (ai-vision-ob paths or AIV_REPO source-subdirectory paths). Provenance
 URLs and prose about source access remain allowed. Product download recipes
 use antgroup/ai-vision.
 """
+from html import unescape
 from pathlib import Path
 import re
 import sys
+from unicodedata import category
 from urllib.parse import unquote, urlsplit
 
 
 INLINE_LINK = re.compile(r"!?\[[^\]\n]*\]\(\s*(<[^>\n]+>|[^\s)]+)(?:\s+[^)\n]*)?\)")
 REFERENCE_LINK = re.compile(r"^\s{0,3}\[[^\]\n]+\]:\s*(<[^>\n]+>|\S+)", re.MULTILINE)
 FENCE = re.compile(r"^\s*(`{3,}|~{3,})([\w-]*)\s*$")
+ATX_HEADING = re.compile(r"^ {0,3}#{1,6}[ \t]+(.+?)(?:[ \t]+#+)?[ \t]*$", re.MULTILINE)
+NAMED_ANCHOR = re.compile(r"""<a\b[^>]*?\sname\s*=\s*(['"])([^'"]+)\1""", re.IGNORECASE)
 INDEXES = ("README.md", "README.zh-CN.md", "README.ja-JP.md", "skills/README.md")
 CHECKOUT_COMMAND = re.compile(
     r"\b(?:git\s+clone|gh\s+repo\s+clone)\b[^\n]*"
@@ -58,8 +62,40 @@ def _markdown_links(prose: str):
             yield match.group(1).strip("<>")
 
 
+def _markdown_sections(text: str) -> set[str]:
+    """Resolve GitHub section IDs for ATX headings and named HTML anchors."""
+    prose, _ = _markdown_parts(text)
+    prose = re.sub(r"<!--.*?-->", "", prose, flags=re.DOTALL)
+    headings: set[str] = set()
+    suffixes: dict[str, int] = {}
+    for match in ATX_HEADING.finditer(prose):
+        heading = re.sub(r"!?\[([^\]]+)\]\([^)]*\)", r"\1", match[1])
+        heading = re.sub(r"</?[A-Za-z][^>]*>", "", heading)
+        heading = re.sub(r"(?<!\w)(_+)(\S(?:.*?\S)?)\1(?!\w)", r"\2", heading)
+        slug = "".join(
+            char for char in unescape(heading).strip().lower().replace(" ", "-")
+            if char.isalnum() or char in "-_" or category(char).startswith("M")
+        )
+        if not slug:
+            continue
+        anchor = slug
+        while anchor in headings:
+            suffixes[slug] = suffixes.get(slug, 0) + 1
+            anchor = f"{slug}-{suffixes[slug]}"
+        headings.add(anchor)
+    return headings | {unescape(match[2]) for match in NAMED_ANCHOR.finditer(prose)}
+
+
+def _missing_section(destination: Path, fragment: str, sections: dict[Path, set[str]]) -> bool:
+    if not fragment or destination.suffix.lower() != ".md" or not destination.is_file():
+        return False
+    if destination not in sections:
+        sections[destination] = _markdown_sections(destination.read_text(encoding="utf-8"))
+    return unquote(fragment) not in sections[destination]
+
+
 def validate_catalog(root: Path) -> list[str]:
-    """Return resource, duplicate-name, and private-checkout integrity errors.
+    """Return resource, section-link, duplicate-name, and checkout integrity errors.
 
     Only ordinary one-line ``name:`` scalars are read for duplicate detection.
     This is not a YAML validator: the pinned upstream CLI must also accept and
@@ -68,6 +104,7 @@ def validate_catalog(root: Path) -> list[str]:
     root = root.resolve()
     errors: list[str] = []
     names: dict[str, Path] = {}
+    sections: dict[Path, set[str]] = {}
     for entry in sorted((root / "skills").glob("*/SKILL.md")):
         skill = entry.parent.resolve()
         text = entry.read_text(encoding="utf-8")
@@ -92,13 +129,15 @@ def validate_catalog(root: Path) -> list[str]:
                     if RETIRED_RELEASE_ENDPOINT.search(target):
                         errors.append(f"{label}: retired product download link {target!r}")
                     parsed = urlsplit(target)
-                    if parsed.scheme or parsed.netloc or not parsed.path:
+                    if parsed.scheme or parsed.netloc or not (parsed.path or parsed.fragment):
                         continue
-                    resolved = (resource.parent / unquote(parsed.path)).resolve()
+                    resolved = (resource.parent / unquote(parsed.path)).resolve() if parsed.path else resource.resolve()
                     if not resolved.is_relative_to(skill):
                         errors.append(f"{label}: local resource {target!r} escapes its Skill directory")
                     elif not resolved.exists():
                         errors.append(f"{label}: missing local resource {target!r}")
+                    elif _missing_section(resolved, parsed.fragment, sections):
+                        errors.append(f"{label}: missing Markdown section {target!r}")
             elif resource.suffix in {".sh", ".bash", ".zsh", ".py", ".ps1", ".jq"}:
                 commands = resource.read_text(encoding="utf-8")
             else:
@@ -114,6 +153,7 @@ def validate_indexes(root: Path) -> list[str]:
     root = root.resolve()
     entries = {entry.relative_to(root) for entry in (root / "skills").glob("*/SKILL.md")}
     errors = []
+    sections: dict[Path, set[str]] = {}
     for index in INDEXES:
         path = root / index
         if not path.is_file() or not path.resolve().is_relative_to(root):
@@ -125,12 +165,14 @@ def validate_indexes(root: Path) -> list[str]:
             if RETIRED_RELEASE_ENDPOINT.search(target):
                 errors.append(f"{index}: retired product download link {target!r}")
             parsed = urlsplit(target)
-            if parsed.scheme or parsed.netloc or not parsed.path:
+            if parsed.scheme or parsed.netloc or not (parsed.path or parsed.fragment):
                 continue
-            resolved = (path.parent / unquote(parsed.path)).resolve()
+            resolved = (path.parent / unquote(parsed.path)).resolve() if parsed.path else path.resolve()
             if not resolved.is_relative_to(root) or not resolved.exists():
                 errors.append(f"{index}: missing local link target {target!r}")
                 continue
+            if _missing_section(resolved, parsed.fragment, sections):
+                errors.append(f"{index}: missing Markdown section {target!r}")
             linked_entries.add(resolved.relative_to(root))
         for entry in sorted(entries - linked_entries):
             errors.append(f"{index}: missing link to {entry}")

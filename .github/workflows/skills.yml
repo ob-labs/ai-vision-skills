@@ -29,7 +29,7 @@ jobs:
           python-version: '3.12'
       - name: Catalog resources and translated README links
         run: python3 scripts/check_catalog.py
-      - name: Installer and catalog fixture tests
+      - name: Installer, catalog, and documented command tests
         run: |
           jq --version
           pwsh -NoProfile -NonInteractive -Command '$PSVersionTable.PSVersion.ToString()'

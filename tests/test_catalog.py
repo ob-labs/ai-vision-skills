@@ -26,7 +26,7 @@ class CatalogTests(unittest.TestCase):
         skill = self.skill(body="[Guide](reference/guide.md#usage) [Runner](scripts/run.py)")
         (skill / "reference").mkdir()
         (skill / "scripts").mkdir()
-        (skill / "reference/guide.md").write_text("[Back](../SKILL.md)\n")
+        (skill / "reference/guide.md").write_text("## Usage\n[Back](../SKILL.md)\n")
         (skill / "scripts/run.py").write_text("print('hello')\n")
         self.assertEqual(validate_catalog(self.root), [])
 
@@ -38,6 +38,29 @@ class CatalogTests(unittest.TestCase):
         skill = self.skill(body="[Guide](guide.md)")
         (skill / "guide.md").write_text("[Runner](scripts/missing.py)\n")
         self.assertTrue(validate_catalog(self.root))
+
+    def test_missing_sections_are_reported_for_inline_and_reference_links(self):
+        skill = self.skill(body=(
+            "[Missing](#missing) [Guide][guide]\n\n"
+            "```sh\n# Missing\n```\n\n"
+            "[guide]: reference.md#unknown\n"
+        ))
+        (skill / "reference.md").write_text("## Usage\n")
+        errors = validate_catalog(self.root)
+        self.assertEqual(len(errors), 2, errors)
+        self.assertIn("missing Markdown section '#missing'", "\n".join(errors))
+        self.assertIn("missing Markdown section 'reference.md#unknown'", "\n".join(errors))
+
+    def test_github_heading_links_preserve_existing_hyphens_and_count_duplicates(self):
+        self.skill(body=(
+            "[First](#daily--use-aiv) [Second](#daily--use-aiv-1)\n"
+            "[Third](#daily--use-aiv-2) [Custom](#prepare-archive)\n\n"
+            "## Daily — _Use_ `aiv`!\n"
+            "## Daily — Use aiv-1\n"
+            "## Daily — Use aiv ##\n"
+            '<a name="prepare-archive"></a>'
+        ))
+        self.assertEqual(validate_catalog(self.root), [])
 
     def test_reference_style_missing_resource_is_reported(self):
         self.skill(body="Read [the guide][guide].\n\n[guide]: reference/missing.md")
@@ -97,7 +120,8 @@ class CatalogTests(unittest.TestCase):
             "[Provenance](https://github.com/ob-labs/ai-vision-ob/commit/123)\n"
             "[Section](#usage) [Email](mailto:example@example.com)\n"
             "```sh\nAIV_REPOSITORY=ob-labs/ai-vision-ob\n"
-            "gh release download v1.0 --repo antgroup/ai-vision\n```"
+            "gh release download v1.0 --repo antgroup/ai-vision\n```\n\n"
+            "## Usage"
         ))
         self.assertEqual(validate_catalog(self.root), [])
 
@@ -122,21 +146,34 @@ class CatalogIndexTests(unittest.TestCase):
             root = Path(temporary)
             entry = root / "skills/example/SKILL.md"
             entry.parent.mkdir(parents=True)
-            entry.touch()
+            entry.write_text("# Usage\n", encoding="utf-8")
             for name in ("README.md", "README.zh-CN.md", "README.ja-JP.md"):
                 (root / name).write_text("[Example](skills/example/SKILL.md)\n", encoding="utf-8")
             (root / "skills/README.md").write_text("[Example](example/SKILL.md)\n", encoding="utf-8")
             complete = subprocess.run([sys.executable, checker, root], capture_output=True, text=True)
             self.assertEqual(complete.returncode, 0, complete.stderr)
 
+            (root / "README.ja-JP.md").write_text(
+                "# インストール\n[Example](skills/example/SKILL.md#usage)\n", encoding="utf-8"
+            )
+            (root / "README.zh-CN.md").write_text(
+                "[Japanese](README.ja-JP.md#%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB)\n"
+                "[Example](skills/example/SKILL.md#usage)\n", encoding="utf-8"
+            )
+            complete = subprocess.run([sys.executable, checker, root], capture_output=True, text=True)
+            self.assertEqual(complete.returncode, 0, complete.stderr)
+
             (root / "README.ja-JP.md").unlink()
-            (root / "README.zh-CN.md").write_text("[English](README.md) [Missing](guide.md)\n", encoding="utf-8")
+            (root / "README.zh-CN.md").write_text(
+                "[English](README.md#missing-section) [Missing](guide.md)\n", encoding="utf-8"
+            )
             incomplete = subprocess.run([sys.executable, checker, root], capture_output=True, text=True)
             self.assertNotEqual(incomplete.returncode, 0, incomplete.stdout)
             errors = incomplete.stderr.splitlines()
             self.assertTrue(any("README.ja-JP.md" in error for error in errors))
             self.assertTrue(any("README.zh-CN.md" in error and "guide.md" in error for error in errors))
             self.assertTrue(any("README.zh-CN.md" in error and "skills/example/SKILL.md" in error for error in errors))
+            self.assertTrue(any("missing Markdown section 'README.md#missing-section'" in error for error in errors))
 
 
 class InstallationChecksTests(unittest.TestCase):

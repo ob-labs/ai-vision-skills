@@ -272,7 +272,7 @@ Do not rerun the date-generation step. If using `--reset-vars`, explicitly
 reapply this file and any other original deployment overrides.
 
 After verification, introduce the optional
-[trace and metric query skills](../SKILL.md#after-deployment-help-the-user-use-their-data).
+[trace and metric query skills](../SKILL.md#help-the-user-sign-in-and-get-started).
 If the deployment has no application telemetry, guide the user through Agent
 onboarding and a real task first. If data already exists, preserve this
 endpoint, space and Agent context when handing off to a query skill; query
